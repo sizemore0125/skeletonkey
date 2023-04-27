@@ -22,6 +22,7 @@ def main(args):
     model = bones.instantiate(args.model)
     print("Model layer size: ", model.layer_size)
     print("Model activation: ", model.activation)
+    print("Number of Epochs: ", args.epochs)
 
 if __name__ == "__main__":  
     main()
@@ -29,12 +30,13 @@ if __name__ == "__main__":
 
 To run the example above, create a config.yaml file with the following content:
 ```yaml
+epochs: 128
 model:
   _target_: MyModel
   layer_size: 128
   activation: relu
 ```
 To run the script and overwrite default arguments, use the command:
-```
-python project.py --model.layer_size 256
+```bash
+python project.py --epochs 256
 ```
