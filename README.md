@@ -34,3 +34,7 @@ model:
   layer_size: 128
   activation: relu
 ```
+To run the script and overwrite default arguments, use the command:
+```
+python project.py --model.layer_size 256
+```
