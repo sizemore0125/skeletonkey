@@ -7,9 +7,6 @@ Bones is a simple, lightweight, and flexible configuration management tool that 
 Below is an example of how to use Bones in your project:
 
 ```python
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../bones')))
 import bones
 
 class MyModel:
