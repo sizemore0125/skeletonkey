@@ -12,11 +12,41 @@ import argparse
 import functools
 import inspect
 import os
+import sys
 from typing import Callable, Optional, Type, Any, Dict
 
-from .utils import open_yaml, load_yaml_config, add_args_from_dict
+from .utils import open_yaml, load_yaml_config, add_args_from_dict, add_yaml_extension
 
-def skeleton_key(config_name: str, config_path: Optional[str]="./") -> Callable:
+def get_config_dir_path(config_path: str) -> str:
+    """
+    Convert a given relative or absolute config file path to its absolute directory path.
+
+    Args:
+        config_path (str): The path to the configuration file. Can be either relative or absolute.
+
+    Returns:
+        str: The absolute directory path containing the configuration file.
+    """
+     # Check if the given config_path is a relative path
+    if not os.path.isabs(config_path):
+        # Get the directory of the main script file (entry point) in absolute form
+        path_from_main = os.path.dirname(os.path.abspath(str(sys.modules['__main__'].__file__)))
+
+        if config_path.startswith("./"):
+            config_path = config_path[len("./"):]
+
+        # Traverse up the directory structure for each "../" in config_path
+        # Remove the "../" string from the path, and remove a directory from main.
+        while config_path.startswith("../"):
+            config_path = config_path[len("../"):]
+            path_from_main = os.path.dirname(path_from_main)
+
+        # Create absolute path.
+        config_path = os.path.join(path_from_main, config_path)
+    return config_path
+
+
+def skeleton_key(config_name: str, config_path: Optional[str]=None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
     main function from a YAML file.
@@ -31,8 +61,13 @@ def skeleton_key(config_name: str, config_path: Optional[str]="./") -> Callable:
                   parse the configuration file and inject the arguments into the
                   main function.
     """
-    config_path = os.path.abspath(config_path)
-    config = load_yaml_config(os.path.join(config_path, config_name))
+    config_path = config_path if config_path else os.path.dirname(config_name)
+    config_path = get_config_dir_path(config_path)
+
+    config_name = add_yaml_extension(config_name)
+    config_name = os.path.basename(config_name)
+
+    config = load_yaml_config(config_path, config_name)
 
     def _parse_config(main: Callable):
         @functools.wraps(main)
@@ -83,12 +118,9 @@ def instantiate(kwargs: Dict[str, Any]) -> Any:
     Raises:
         AssertionError: If the class is missing specific parameters.
     """
-    if "_kwargs_" in kwargs:
-        kwargs.update(open_yaml(kwargs["_kwargs_"]))
-        del kwargs["_kwargs_"]
-
-    class_obj = import_class(kwargs["_target_"])
-    del kwargs["_target_"]
+    target_keyword = "_target_"
+    class_obj = import_class(kwargs[target_keyword])
+    del kwargs[target_keyword]
     
     obj_parameters = list(inspect.signature(class_obj).parameters)
     valid_parameters = {k: v for k, v in kwargs.items() if k in obj_parameters}
