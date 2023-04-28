@@ -1,13 +1,13 @@
-# bones: A Bare-bones Configuration Management Tool
+# SkeletonKey: A Bare-bones Configuration Management Tool
 
-Bones is a simple, lightweight, and flexible configuration management tool that allows you to manage complex configurations for your applications using YAML files. It dynamically loads classes and their arguments at runtime, making it easy to set up and modify your projects.
+`skeletonkey` is a simple, lightweight, and flexible configuration management tool that allows you to manage complex configurations for your applications using YAML files. It dynamically loads classes and their arguments at runtime, making it easy to set up and modify your projects.
 
 ### Usage
 
-Below is an example of how to use Bones in your project:
+Below is an example of how to use `skeletonkey` in your project:
 
 ```python
-import bones
+import skeletonkey
 
 class MyModel:
     def __init__(self, layer_size: int, activation: str) -> None:
