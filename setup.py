@@ -5,12 +5,12 @@ with open("README.md", "r") as f:
 
 setup(
     name="skeletonkey",
-    version="0.0.10",
+    version="0.0.11",
     description="A bare-bones configuration managment tool.",
     packages=find_packages(),
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/sizemore0125/bones",
+    url="https://github.com/sizemore0125/skeletonkey",
     author="Logan Sizemore",
     author_email="sizemore0125@gmail.com",
     license="MIT",
