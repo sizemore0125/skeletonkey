@@ -14,9 +14,9 @@ class MyModel:
         self.layer_size = layer_size
         self.activation = activation
 
-@bones.skeleton_key("config.yaml")
+@skeletonkey.unlock("config.yaml")
 def main(args):
-    model = bones.instantiate(args.model)
+    model = skeletonkey.instantiate(args.model)
     print("Model layer size: ", model.layer_size)
     print("Model activation: ", model.activation)
     print("Number of Epochs: ", args.epochs)

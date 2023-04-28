@@ -17,6 +17,7 @@ from typing import Callable, Optional, Type, Any, Dict
 
 from .utils import open_yaml, load_yaml_config, add_args_from_dict, add_yaml_extension
 
+
 def get_config_dir_path(config_path: str) -> str:
     """
     Convert a given relative or absolute config file path to its absolute directory path.
@@ -27,18 +28,20 @@ def get_config_dir_path(config_path: str) -> str:
     Returns:
         str: The absolute directory path containing the configuration file.
     """
-     # Check if the given config_path is a relative path
+    # Check if the given config_path is a relative path
     if not os.path.isabs(config_path):
         # Get the directory of the main script file (entry point) in absolute form
-        path_from_main = os.path.dirname(os.path.abspath(str(sys.modules['__main__'].__file__)))
+        path_from_main = os.path.dirname(
+            os.path.abspath(str(sys.modules["__main__"].__file__))
+        )
 
         if config_path.startswith("./"):
-            config_path = config_path[len("./"):]
+            config_path = config_path[len("./") :]
 
         # Traverse up the directory structure for each "../" in config_path
         # Remove the "../" string from the path, and remove a directory from main.
         while config_path.startswith("../"):
-            config_path = config_path[len("../"):]
+            config_path = config_path[len("../") :]
             path_from_main = os.path.dirname(path_from_main)
 
         # Create absolute path.
@@ -46,7 +49,7 @@ def get_config_dir_path(config_path: str) -> str:
     return config_path
 
 
-def skeleton_key(config_name: str, config_path: Optional[str]=None) -> Callable:
+def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
     main function from a YAML file.
@@ -81,6 +84,7 @@ def skeleton_key(config_name: str, config_path: Optional[str]=None) -> Callable:
 
     return _parse_config
 
+
 def import_class(class_string: str) -> Type[Any]:
     """
     Dynamically import a class using its full module path and class name.
@@ -99,6 +103,7 @@ def import_class(class_string: str) -> Type[Any]:
     module = __import__(module_name, fromlist=[class_name])
     class_obj = getattr(module, class_name)
     return class_obj
+
 
 def instantiate(kwargs: Dict[str, Any]) -> Any:
     """
@@ -121,12 +126,10 @@ def instantiate(kwargs: Dict[str, Any]) -> Any:
     target_keyword = "_target_"
     class_obj = import_class(kwargs[target_keyword])
     del kwargs[target_keyword]
-    
+
     obj_parameters = list(inspect.signature(class_obj).parameters)
     valid_parameters = {k: v for k, v in kwargs.items() if k in obj_parameters}
-    missing_parameters = [
-        k for k in obj_parameters if k not in valid_parameters.keys()
-    ]
+    missing_parameters = [k for k in obj_parameters if k not in valid_parameters.keys()]
     assert (
         len(missing_parameters) == 0
     ), f"Object mssing specific parameters. ({missing_parameters})"

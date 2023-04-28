@@ -4,7 +4,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(
-    name="bones",
+    name="skeletonkey",
     version="0.0.10",
     description="A bare-bones configuration managment tool.",
     packages=find_packages(),
