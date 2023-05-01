@@ -167,3 +167,42 @@ def add_args_from_dict(arg_parser: argparse.ArgumentParser, config: dict, prefix
             add_args_from_dict(arg_parser, value, f'{prefix}{key}.')
         else:
             arg_parser.add_argument(f"--{prefix}{key}", default=value, type=type(value))
+
+
+def dict_to_namespace(dictionary: dict) -> argparse.Namespace:
+    """
+    Convert a dictionary to an argparse.Namespace object recursively.
+
+    Args:
+        dictionary (dict): The dictionary to be converted.
+
+    Returns:
+        argparse.Namespace: A Namespace object representing the input dictionary.
+    """
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            dictionary[key] = dict_to_namespace(value)
+    return argparse.Namespace(**dictionary)
+
+
+def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Namespace:
+    """
+    Convert an argparse.Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
+
+    Args:
+        namespace (argparse.Namespace): The Namespace object to be converted.
+
+    Returns:
+        argparse.Namespace: A nested Namespace representation of the input Namespace object.
+    """
+    nested_dict = {}
+    for key, value in vars(namespace).items():
+        keys = key.split(".")
+        current_dict = nested_dict
+        for sub_key in keys[:-1]:
+            if sub_key not in current_dict:
+                current_dict[sub_key] = {}
+            current_dict = current_dict[sub_key]
+        current_dict[keys[-1]] = value
+
+    return dict_to_namespace(nested_dict)
