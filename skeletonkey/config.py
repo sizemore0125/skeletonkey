@@ -129,7 +129,7 @@ def load_yaml_config(config_path: str, config_name: str, default_keyword: str = 
     Args:
         path (str): The file path to the YAML configuration file.
         default_keyword (str): The keyword used to identify default configurations
-                               in the YAML file. Defaults to "defaults".
+            in the YAML file. Defaults to "defaults".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -150,16 +150,59 @@ def load_yaml_config(config_path: str, config_name: str, default_keyword: str = 
 
     return config
 
-def add_args_from_dict(arg_parser: argparse.ArgumentParser, config: dict) -> None:
+def add_args_from_dict(arg_parser: argparse.ArgumentParser, config: dict, prefix='') -> None:
     """
     Add arguments to an ArgumentParser instance using key-value pairs from a 
-    configuration dictionary.
-
+    configuration dictionary. If the dictionary contains a nested dictionary, the
+    argument will be added as --key.key value.
     Args:
         arg_parser (argparse.ArgumentParser): The ArgumentParser instance to which
                                               arguments will be added.
         config (dict): A dictionary containing key-value pairs representing
                        the arguments and their default values.
+        prefix (str, optional): The prefix string for nested keys. Defaults to ''.
     """
     for key, value in config.items():
-        arg_parser.add_argument(f"--{key}", default=value, type=type(value))
+        if isinstance(value, dict):
+            add_args_from_dict(arg_parser, value, f'{prefix}{key}.')
+        else:
+            arg_parser.add_argument(f"--{prefix}{key}", default=value, type=type(value))
+
+
+def dict_to_namespace(dictionary: dict) -> argparse.Namespace:
+    """
+    Convert a dictionary to an argparse.Namespace object recursively.
+
+    Args:
+        dictionary (dict): The dictionary to be converted.
+
+    Returns:
+        argparse.Namespace: A Namespace object representing the input dictionary.
+    """
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            dictionary[key] = dict_to_namespace(value)
+    return argparse.Namespace(**dictionary)
+
+
+def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Namespace:
+    """
+    Convert an argparse.Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
+
+    Args:
+        namespace (argparse.Namespace): The Namespace object to be converted.
+
+    Returns:
+        argparse.Namespace: A nested Namespace representation of the input Namespace object.
+    """
+    nested_dict = {}
+    for key, value in vars(namespace).items():
+        keys = key.split(".")
+        current_dict = nested_dict
+        for sub_key in keys[:-1]:
+            if sub_key not in current_dict:
+                current_dict[sub_key] = {}
+            current_dict = current_dict[sub_key]
+        current_dict[keys[-1]] = value
+
+    return dict_to_namespace(nested_dict)
