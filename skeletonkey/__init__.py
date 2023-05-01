@@ -49,6 +49,44 @@ def get_config_dir_path(config_path: str) -> str:
     return config_path
 
 
+def dict_to_namespace(dictionary: dict) -> argparse.Namespace:
+    """
+    Convert a dictionary to an argparse.Namespace object recursively.
+
+    Args:
+        dictionary (dict): The dictionary to be converted.
+
+    Returns:
+        argparse.Namespace: A Namespace object representing the input dictionary.
+    """
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            dictionary[key] = dict_to_namespace(value)
+    return argparse.Namespace(**dictionary)
+
+
+def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Namespace:
+    """
+    Convert an argparse.Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
+
+    Args:
+        namespace (argparse.Namespace): The Namespace object to be converted.
+
+    Returns:
+        argparse.Namespace: A nested Namespace representation of the input Namespace object.
+    """
+    nested_dict = {}
+    for key, value in vars(namespace).items():
+        keys = key.split(".")
+        current_dict = nested_dict
+        for sub_key in keys[:-1]:
+            if sub_key not in current_dict:
+                current_dict[sub_key] = {}
+            current_dict = current_dict[sub_key]
+        current_dict[keys[-1]] = value
+
+    return dict_to_namespace(nested_dict)
+
 def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
@@ -78,6 +116,7 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
             args = parser.parse_args()
+            args = namespace_to_nested_namespace(args)
             main(args)
 
         return _inner_function
@@ -105,17 +144,16 @@ def import_class(class_string: str) -> Type[Any]:
     return class_obj
 
 
-def instantiate(kwargs: Dict[str, Any]) -> Any:
+def instantiate(namespace: argparse.Namespace) -> Any:
     """
     Instantiate a class object using a dictionary of keyword arguments.
     The dictionary should contain the keys "_kwargs_" and "_target_" to
     specify the class to instantiate and its arguments.
 
     Args:
-        kwargs (Dict[str, Any]): A dictionary containing the keys "_kwargs_"
-                                 and "_target_" to specify the class and its
-                                 arguments, along with any additional keyword
-                                 arguments for the class.
+        namespace (argparse.Namespace): A Namespace object containing the key "_kwargs_" 
+            to specify the class and its arguments, along with any additional keyword 
+            arguments for the class.
 
     Returns:
         Any: An instance of the specified class.
@@ -123,6 +161,7 @@ def instantiate(kwargs: Dict[str, Any]) -> Any:
     Raises:
         AssertionError: If the class is missing specific parameters.
     """
+    kwargs = vars(namespace)
     target_keyword = "_target_"
     class_obj = import_class(kwargs[target_keyword])
     del kwargs[target_keyword]

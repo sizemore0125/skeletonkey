@@ -129,7 +129,7 @@ def load_yaml_config(config_path: str, config_name: str, default_keyword: str = 
     Args:
         path (str): The file path to the YAML configuration file.
         default_keyword (str): The keyword used to identify default configurations
-                               in the YAML file. Defaults to "defaults".
+            in the YAML file. Defaults to "defaults".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -150,16 +150,20 @@ def load_yaml_config(config_path: str, config_name: str, default_keyword: str = 
 
     return config
 
-def add_args_from_dict(arg_parser: argparse.ArgumentParser, config: dict) -> None:
+def add_args_from_dict(arg_parser: argparse.ArgumentParser, config: dict, prefix='') -> None:
     """
     Add arguments to an ArgumentParser instance using key-value pairs from a 
-    configuration dictionary.
-
+    configuration dictionary. If the dictionary contains a nested dictionary, the
+    argument will be added as --key.key value.
     Args:
         arg_parser (argparse.ArgumentParser): The ArgumentParser instance to which
                                               arguments will be added.
         config (dict): A dictionary containing key-value pairs representing
                        the arguments and their default values.
+        prefix (str, optional): The prefix string for nested keys. Defaults to ''.
     """
     for key, value in config.items():
-        arg_parser.add_argument(f"--{key}", default=value, type=type(value))
+        if isinstance(value, dict):
+            add_args_from_dict(arg_parser, value, f'{prefix}{key}.')
+        else:
+            arg_parser.add_argument(f"--{prefix}{key}", default=value, type=type(value))
