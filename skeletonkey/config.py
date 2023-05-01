@@ -146,7 +146,7 @@ def load_yaml_config(config_path: str, config_name: str, default_keyword: str = 
                 yaml_paths = get_default_yaml_paths_from_dict(default_yaml)
                 default_configs = [open_yaml(os.path.join(config_path, yaml_path)) for yaml_path in yaml_paths]
                 default_config = {key: value for config_dict in default_configs for key, value in config_dict.items()}
-            config.update(default_config)
+            config.update((key, value) for key, value in default_config.items() if key not in config)
 
     return config
 
