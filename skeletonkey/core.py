@@ -6,7 +6,7 @@ import sys
 from typing import Callable, Optional, Type, Any, Dict
 
 from .config import load_yaml_config, add_args_from_dict, add_yaml_extension, namespace_to_nested_namespace
-
+import pprint
 
 def get_config_dir_path(config_path: str) -> str:
     """
@@ -65,7 +65,11 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
         @functools.wraps(main)
         def _inner_function():
             parser = argparse.ArgumentParser()
+            # Inject args from YAML config
             add_args_from_dict(parser, config)
+            # Inject environment variables into the parser if they are also defined in the config
+            for env, val in ((e,v) for e,v in dict(os.environ).items() if f'--{e.lower()}' in parser._option_string_actions):
+                parser._option_string_actions[f'--{env.lower()}'].default = val
             args = parser.parse_args()
             args = namespace_to_nested_namespace(args)
             main(args)
