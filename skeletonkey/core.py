@@ -65,7 +65,6 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
         @functools.wraps(main)
         def _inner_function():
             parser = argparse.ArgumentParser()
-            # Inject args from YAML config
             add_args_from_dict(parser, config)
             # Inject environment variables into the parser if they are also defined in the config
             for env, val in ((e,v) for e,v in dict(os.environ).items() if f'--{e.lower()}' in parser._option_string_actions):
