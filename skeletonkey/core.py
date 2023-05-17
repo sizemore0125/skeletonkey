@@ -6,7 +6,6 @@ import sys
 from typing import Callable, Optional, Type, Any, Dict
 
 from .config import load_yaml_config, add_args_from_dict, add_yaml_extension, namespace_to_nested_namespace
-import pprint
 
 def get_config_dir_path(config_path: str) -> str:
     """
