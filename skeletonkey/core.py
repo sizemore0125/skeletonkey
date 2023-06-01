@@ -37,7 +37,7 @@ def get_config_dir_path(config_path: str) -> str:
         config_path = os.path.join(path_from_main, config_path)
     return config_path
 
-def unlock(config_name: str, config_path: Optional[str] = None, bind_env_vars: Optional[bool] = False) -> Callable:
+def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
     main function from a YAML file.
@@ -65,10 +65,12 @@ def unlock(config_name: str, config_path: Optional[str] = None, bind_env_vars: O
         def _inner_function():
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
-            if bind_env_vars:
-                # Inject environment variables into the parser if they are also defined in the config
-                for env, val in ((e,v) for e,v in dict(os.environ).items() if f'--{e.lower()}' in parser._option_string_actions):
-                    parser._option_string_actions[f'--{env.lower()}'].default = val
+            for action in parser._option_string_actions.values():
+                action_name = action.dest
+                if action_name.startswith('$') and action_name[1:] in os.environ:
+                    action.default = os.environ[action_name[1:]]
+
+
             args = parser.parse_args()
             args = namespace_to_nested_namespace(args)
             main(args)
