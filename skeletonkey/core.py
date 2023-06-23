@@ -118,7 +118,7 @@ def instantiate(namespace: argparse.Namespace) -> Any:
     Raises:
         AssertionError: If the class is missing specific parameters.
     """
-    kwargs = vars(namespace)
+    kwargs = vars(namespace).copy()
     target_keyword = "_target_"
     class_obj = import_class(kwargs[target_keyword])
     del kwargs[target_keyword]
