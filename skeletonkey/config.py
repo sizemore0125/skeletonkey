@@ -148,6 +148,7 @@ def get_default_args_from_dict(config_path: str, default_yaml: dict) -> dict:
     default_config = {
         key: value
         for config_dict in default_configs
+        if config_dict
         for key, value in config_dict.items()
     }
     return default_config
@@ -192,11 +193,13 @@ def load_yaml_config(
         default_path_dict = config[default_keyword]
         if isinstance(default_path_dict, dict):
             default_config = get_default_args_from_dict(config_path, default_path_dict)
-            config.update(
-                (key, value)
-                for key, value in default_config.items()
-                if key not in config
-            )
+
+            if default_config:
+                config.update(
+                    (key, value)
+                    for key, value in default_config.items()
+                    if key not in config
+                )
         else:
             for default_yaml in default_path_dict:
                 if isinstance(default_yaml, dict):
@@ -209,11 +212,12 @@ def load_yaml_config(
                         config_path, default_yaml
                     )
 
-                config.update(
-                    (key, value)
-                    for key, value in default_config.items()
-                    if key not in config
-                )
+                if default_config:
+                    config.update(
+                        (key, value)
+                        for key, value in default_config.items()
+                        if key not in config
+                    )
         del config[default_keyword]
 
     return config
