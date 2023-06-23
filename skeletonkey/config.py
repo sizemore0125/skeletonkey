@@ -131,6 +131,16 @@ def get_default_yaml_paths_from_dict(default_yaml: dict) -> List[str]:
 
 
 def get_default_args_from_dict(config_path: str, default_yaml: dict) -> dict:
+    """
+    Load a YAML default configuration files in dict format and returns a dictionary of args.
+
+    Args:
+        config_path (str): The file path to the YAML configuration file.
+        default_yml (dict): A dictionary data structure representing the paths to many
+            YAML configuration files.
+
+    Returns:
+        dict: The updated configuration dictionary."""
     yaml_paths = get_default_yaml_paths_from_dict(default_yaml)
     default_configs = [
         open_yaml(os.path.join(config_path, yaml_path)) for yaml_path in yaml_paths
@@ -143,7 +153,17 @@ def get_default_args_from_dict(config_path: str, default_yaml: dict) -> dict:
     return default_config
 
 
-def get_default_args_from_list(config_path: str, default_yaml: list) -> dict:
+def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
+    """
+    Load a YAML default configuration files and returns a dictionary of args.
+
+    Args:
+        config_path (str): The file path to the YAML base configuration file.
+        default_yml (str): The relative path to to the default YAML subconfiguration file.
+
+    Returns:
+        dict: The updated configuration dictionary.
+    """
     default_yaml = add_yaml_extension(default_yaml)
     default_config_path = os.path.join(config_path, default_yaml)
     default_config = open_yaml(default_config_path)
@@ -157,7 +177,8 @@ def load_yaml_config(
     Load a YAML configuration file and update it with default configurations.
 
     Args:
-        path (str): The file path to the YAML configuration file.
+        config_path (str): The file path to the YAML configuration file.
+        config_name (str): The name of the YAML configuration file.
         default_keyword (str): The keyword used to identify default configurations
             in the YAML file. Defaults to "defaults".
 
@@ -184,7 +205,7 @@ def load_yaml_config(
                     )
 
                 elif isinstance(default_yaml, str):
-                    default_config = get_default_args_from_list(
+                    default_config = get_default_args_from_path(
                         config_path, default_yaml
                     )
 
