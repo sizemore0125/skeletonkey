@@ -7,7 +7,6 @@ from typing import Callable, Optional, Type, Any, Dict
 
 from .config import load_yaml_config, add_args_from_dict, add_yaml_extension, namespace_to_nested_namespace
 
-
 def get_config_dir_path(config_path: str) -> str:
     """
     Convert a given relative or absolute config file path to its absolute directory path.
@@ -66,6 +65,12 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
         def _inner_function():
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
+            for action in parser._option_string_actions.values():
+                action_name = action.dest
+                if action_name.startswith('$') and action_name[1:] in os.environ:
+                    action.default = os.environ[action_name[1:]]
+
+
             args = parser.parse_args()
             args = namespace_to_nested_namespace(args)
             main(args)
