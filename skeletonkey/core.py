@@ -5,7 +5,13 @@ import os
 import sys
 from typing import Callable, Optional, Type, Any, Dict
 
-from .config import load_yaml_config, add_args_from_dict, add_yaml_extension, namespace_to_nested_namespace
+from .config import (
+    load_yaml_config,
+    add_args_from_dict,
+    add_yaml_extension,
+    namespace_to_nested_namespace,
+)
+
 
 def get_config_dir_path(config_path: str) -> str:
     """
@@ -37,6 +43,7 @@ def get_config_dir_path(config_path: str) -> str:
         config_path = os.path.join(path_from_main, config_path)
     return config_path
 
+
 def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
@@ -65,12 +72,6 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
         def _inner_function():
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
-            for action in parser._option_string_actions.values():
-                action_name = action.dest
-                if action_name.startswith('$') and action_name[1:] in os.environ:
-                    action.default = os.environ[action_name[1:]]
-
-
             args = parser.parse_args()
             args = namespace_to_nested_namespace(args)
             main(args)
@@ -107,8 +108,8 @@ def instantiate(namespace: argparse.Namespace) -> Any:
     specify the class to instantiate and its arguments.
 
     Args:
-        namespace (argparse.Namespace): A Namespace object containing the key "_kwargs_" 
-            to specify the class and its arguments, along with any additional keyword 
+        namespace (argparse.Namespace): A Namespace object containing the key "_kwargs_"
+            to specify the class and its arguments, along with any additional keyword
             arguments for the class.
 
     Returns:
