@@ -246,6 +246,10 @@ def add_args_from_dict(
                 arg_parser.add_argument(
                     f"--{prefix}{key[1:]}", default=env_var, type=type(env_var)
                 )
+            elif key.startswith("?"):
+                arg_parser.add_argument(
+                    f"--{prefix}{key[1:]}", default=value, action='store_true'
+                        )
             else:
                 arg_parser.add_argument(
                     f"--{prefix}{key}", default=value, type=type(value)
