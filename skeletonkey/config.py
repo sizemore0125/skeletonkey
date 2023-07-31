@@ -241,10 +241,11 @@ def add_args_from_dict(
         if isinstance(value, dict):
             add_args_from_dict(arg_parser, value, f"{prefix}{key}.")
         else:
-            if key.startswith("$") and key[1:] in os.environ:
-                env_var = os.environ[key[1:]]
+            if key.startswith("$"):
+                if key[1:] in os.environ:
+                    value = os.environ[key[1:]]
                 arg_parser.add_argument(
-                    f"--{prefix}{key[1:]}", default=env_var, type=type(env_var)
+                    f"--{prefix}{key[1:]}", default=value, type=type(value)
                 )
             else:
                 arg_parser.add_argument(
