@@ -8,7 +8,6 @@ files and enables the dynamic loading of classes and their arguments at runtime.
 """
 
 import argparse
-import inspect
 import os
 from typing import List
 
@@ -59,7 +58,7 @@ def open_yaml(path: str) -> dict:
         return yaml.safe_load(handle)
 
 
-def dict_to_path(dictionary: dict, parent_key="", sep="/") -> List[str]:
+def dict_to_path(dictionary: dict, parent_key="") -> List[str]:
     """
     Flatten a nested dictionary into a single-level dictionary by concatenating
     nested keys using a specified separator.
@@ -250,7 +249,7 @@ def add_args_from_dict(
             elif key.startswith("?"):
                 arg_parser.add_argument(
                     f"--{prefix}{key[1:]}", default=value, action='store_true'
-                        )
+                )
             else:
                 arg_parser.add_argument(
                     f"--{prefix}{key}", default=value, type=type(value)
