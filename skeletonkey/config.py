@@ -171,7 +171,7 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
 
 
 def load_yaml_config(
-    config_path: str, config_name: str, default_keyword: str = "defaults"
+    config_path: str, config_name: str, default_keyword: str = "defaults", collection_keyword: str = "keyring"
 ) -> dict:
     """
     Load a YAML configuration file and update it with default configurations.
@@ -219,6 +219,20 @@ def load_yaml_config(
                     )
         del config[default_keyword]
 
+    if collection_keyword in config:
+        collections_dict = config[collection_keyword]
+        for collection_key in collections_dict.keys():
+
+            if collection_key in config:
+                return ValueError("You cannot have a collection with the same name as an argument.")
+
+            collection_dict = collections_dict[collection_key]
+            config[collection_key] = {}
+            for subconfig_key in collection_dict.keys():
+                subconfig = get_default_args_from_path(config_path, collection_dict[subconfig_key])
+                config[collection_key].update({subconfig_key : subconfig})
+        del config[collection_keyword]
+    
     return config
 
 

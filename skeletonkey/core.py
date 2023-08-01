@@ -74,7 +74,7 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
             add_args_from_dict(parser, config)
             args = parser.parse_args()
             args = namespace_to_nested_namespace(args)
-            main(args)
+            return main(args)
 
         return _inner_function
 
