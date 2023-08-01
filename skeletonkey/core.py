@@ -3,7 +3,7 @@ import functools
 import inspect
 import os
 import sys
-from typing import Callable, Optional, Type, Any, Dict
+from typing import Callable, Optional, Type, Any, Tuple
 
 from .config import (
     load_yaml_config,
@@ -103,13 +103,13 @@ def import_class(class_string: str) -> Type[Any]:
 
 def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     """
-    Instantiate a class object using a dictionary of keyword arguments.
-    The dictionary should contain the keys "_kwargs_" and "_target_" to
-    specify the class to instantiate and its arguments.
+    Instantiate a class object using a Namespace object.
+    The Namespace object should contain the key "_target_" to
+    specify the class to instantiate.
 
     Args:
-        namespace (argparse.Namespace): A Namespace object containing the key "_kwargs_"
-            to specify the class and its arguments, along with any additional keyword
+        namespace (argparse.Namespace): A Namespace object containing the key "_target_"
+            to specify the class, along with any additional keyword
             arguments for the class.
 
     Returns:
@@ -137,3 +137,34 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
         )
     
     return class_obj(**obj_kwargs)
+
+def instantiate_all(namespace: argparse.Namespace, **kwargs) -> Tuple[Any]:
+    """
+    Instantiate a tuple of class objects using a Namespace object.
+    The Namespace object should contain other Namespace objects where the key 
+    "_target_" is at the top level, which specifies the class to instantiate.
+
+    Args:
+        namespace (argparse.Namespace): A Namespace object containing the key "_target_"
+            to specify the class , along with any additional keyword arguments for the class.
+
+    Returns:
+        Tuple[Any]: An tuple of instances of the specified class.
+
+    Raises:
+        ValueError: If any subconfig does not have "_target_" key.
+    """
+    collection_dict = vars(namespace).copy()
+
+    objects = []
+
+    for obj_key in collection_dict.keys():
+        obj_namespace = collection_dict[obj_key]
+
+        if not hasattr(obj_namespace, "_target_"):
+            raise ValueError(f"subconfig ({obj_key}) in collection does not have '_target_' key at the top level.")
+        
+        obj = instantiate(obj_namespace, **kwargs)
+        objects.append(obj)
+    
+    return tuple(objects)
