@@ -10,7 +10,7 @@ the dynamic loading of classes and their arguments at runtime.
 
 __version__ = "0.0.11"
 
-from .core import unlock, instantiate
+from .core import unlock, instantiate, instantiate_all
 
 # Names to import with wildcard import
-__all__ = ["unlock", "instantiate"]
+__all__ = ["unlock", "instantiate", "instantiate_all"]
