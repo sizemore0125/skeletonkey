@@ -101,7 +101,7 @@ def import_class(class_string: str) -> Type[Any]:
     return class_obj
 
 
-def instantiate(namespace: argparse.Namespace) -> Any:
+def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     """
     Instantiate a class object using a dictionary of keyword arguments.
     The dictionary should contain the keys "_kwargs_" and "_target_" to
@@ -116,18 +116,24 @@ def instantiate(namespace: argparse.Namespace) -> Any:
         Any: An instance of the specified class.
 
     Raises:
-        AssertionError: If the class is missing specific parameters.
+        TypeError: If the class is missing specific parameters.
     """
-    kwargs = vars(namespace).copy()
+    obj_kwargs = vars(namespace).copy()
     target_keyword = "_target_"
-    class_obj = import_class(kwargs[target_keyword])
-    del kwargs[target_keyword]
+    class_obj = import_class(obj_kwargs[target_keyword])
+    del obj_kwargs[target_keyword]
 
-    obj_parameters = list(inspect.signature(class_obj).parameters)
-    valid_parameters = {k: v for k, v in kwargs.items() if k in obj_parameters}
-    missing_parameters = [k for k in obj_parameters if k not in valid_parameters.keys()]
-    assert (
-        len(missing_parameters) == 0
-    ), f"Object mssing specific parameters. ({missing_parameters})"
+    obj_kwargs.update(kwargs)
 
-    return class_obj(**kwargs)
+    obj_parameters = inspect.signature(class_obj).parameters
+    required_parameters = [param_name for param_name, param in obj_parameters.items() if param.default == param.empty]
+    valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
+    missing_parameters = [k for k in required_parameters if k not in valid_parameters.keys()]
+
+    if len(missing_parameters) != 0:
+        raise TypeError(
+            f"missing {len(missing_parameters)} required positional(s) argument: {', '.join(missing_parameters)}."
+            + "Add it to your config or as a keyword argument to skeletonkey.instantiate()."
+        )
+    
+    return class_obj(**obj_kwargs)
