@@ -126,7 +126,10 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     obj_kwargs.update(kwargs)
 
     obj_parameters = inspect.signature(class_obj).parameters
-    required_parameters = [param_name for param_name, param in obj_parameters.items() if param.default == param.empty]
+    required_parameters = [
+        param_name for param_name, param in obj_parameters.items()
+        if param.default == param.empty and param.kind != inspect.Parameter.VAR_KEYWORD
+    ]
     valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
     missing_parameters = [k for k in required_parameters if k not in valid_parameters.keys()]
 
