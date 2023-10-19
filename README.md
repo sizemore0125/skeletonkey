@@ -1,4 +1,7 @@
 # SkeletonKey: A Bare-bones Configuration Management Tool
+<div align="center">
+<img src="./sklogo3.svg" alt="Diagram Description" width="300" >
+</div>
 
 `skeletonkey` is a simple, lightweight, and flexible configuration management tool that allows you to manage complex configurations for your applications using YAML files. It dynamically loads classes and their arguments at runtime, making it easy to set up and modify your projects.
 
