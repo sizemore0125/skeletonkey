@@ -233,7 +233,6 @@ def unpack_collection(config, config_path, collection_keyword):
                 return ValueError("You cannot have a collection with the same name as an argument.")
 
             collection_entry = collections_dict[collection_key]
-            breakpoint()
 
             if isinstance(collection_entry, dict):
                 # The collection entry contains multiple sub-entries, add all of them to the sub-config
