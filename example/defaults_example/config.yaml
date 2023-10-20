@@ -1,0 +1,3 @@
+defaults:
+  - subconfigs/default_config1.yaml
+  - subconfigs/default_config2.yaml
