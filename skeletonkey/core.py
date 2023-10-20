@@ -12,6 +12,7 @@ from .config import (
     namespace_to_nested_namespace,
 )
 
+TARGET_KEYWORD: str = "_target_"
 
 def get_config_dir_path(config_path: str) -> str:
     """
@@ -119,9 +120,8 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
         TypeError: If the class is missing specific parameters.
     """
     obj_kwargs = vars(namespace).copy()
-    target_keyword = "_target_"
-    class_obj = import_class(obj_kwargs[target_keyword])
-    del obj_kwargs[target_keyword]
+    class_obj = import_class(obj_kwargs[TARGET_KEYWORD])
+    del obj_kwargs[TARGET_KEYWORD]
 
     obj_kwargs.update(kwargs)
 
@@ -164,7 +164,7 @@ def instantiate_all(namespace: argparse.Namespace, **kwargs) -> Tuple[Any]:
     for obj_key in collection_dict.keys():
         obj_namespace = collection_dict[obj_key]
 
-        if not hasattr(obj_namespace, "_target_"):
+        if not hasattr(obj_namespace, TARGET_KEYWORD):
             raise ValueError(f"subconfig ({obj_key}) in collection does not have '_target_' key at the top level.")
         
         obj = instantiate(obj_namespace, **kwargs)

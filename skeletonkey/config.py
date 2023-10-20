@@ -13,6 +13,8 @@ from typing import List
 
 import yaml
 
+BASE_DEFAULT_KEYWORD: str = "defaults"
+BASE_COLLECTION_KEYWORD: str = "keyring"
 
 def find_yaml_path(file_path: str) -> str:
     """
@@ -171,7 +173,7 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
 
 
 def load_yaml_config(
-    config_path: str, config_name: str, default_keyword: str = "defaults", collection_keyword: str = "keyring"
+    config_path: str, config_name: str, default_keyword: str = BASE_DEFAULT_KEYWORD, collection_keyword: str = BASE_COLLECTION_KEYWORD
 ) -> dict:
     """
     Load a YAML configuration file and update it with default configurations.
