@@ -1,0 +1,3 @@
+_target_: main.MyModel
+layer_size: 128
+activation: relu
