@@ -220,20 +220,33 @@ def load_yaml_config(
         del config[default_keyword]
 
     if collection_keyword in config:
-        collections_dict = config[collection_keyword]
-        for collection_key in collections_dict.keys():
+        unpack_collection(config, config_path, collection_keyword)
 
+    
+    return config
+
+def unpack_collection(config, config_path, collection_keyword):
+        collections_dict = config[collection_keyword]
+        
+        for collection_key in collections_dict.keys():
             if collection_key in config:
                 return ValueError("You cannot have a collection with the same name as an argument.")
 
-            collection_dict = collections_dict[collection_key]
-            config[collection_key] = {}
-            for subconfig_key in collection_dict.keys():
-                subconfig = get_default_args_from_path(config_path, collection_dict[subconfig_key])
-                config[collection_key].update({subconfig_key : subconfig})
+            collection_entry = collections_dict[collection_key]
+            breakpoint()
+
+            if isinstance(collection_entry, dict):
+                # The collection entry contains multiple sub-entries, add all of them to the sub-config
+                config[collection_key] = {}
+                for subconfig_key in collection_entry.keys():
+                    subconfig = get_default_args_from_path(config_path, collection_entry[subconfig_key])
+                    config[collection_key].update({subconfig_key : subconfig})
+            else:
+                # The collection entry is a single entry, add it to the config
+                subconfig = get_default_args_from_path(config_path, collection_entry)
+                config[collection_key] = subconfig
+
         del config[collection_keyword]
-    
-    return config
 
 
 def add_args_from_dict(
