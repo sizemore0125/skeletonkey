@@ -63,7 +63,7 @@ For instance, if your configuration file has a nested YAML, you can overwrite th
 python project.py --model.parameters.layer_size 256
 ```
 
-The resulting Namespace object will contain nested Namespace objects that can be accessed using dot notation, such as args.model.parameters.layer_size.
+The resulting Key object will contain nested Key objects that can be accessed using dot notation, such as args.model.parameters.layer_size.
 
 
 #### Defining Flags in Configuration
@@ -139,7 +139,7 @@ model:
   activation: relu
 ```
 
-3. When you run your project, `skeletonkey` will merge the default configuration files with the main configuration file, making the values from the default configuration files available in the `args` Namespace object:
+3. When you run your project, `skeletonkey` will merge the default configuration files with the main configuration file, making the values from the default configuration files available in the `args` Key object:
 
 ```python
 print("Learning rate: ", args.learning_rate)

@@ -9,8 +9,8 @@ from .config import (
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
-    namespace_to_nested_namespace,
-    Namespace
+    key_to_nested_key,
+    Key
 )
 
 TARGET_KEYWORD: str = "_target_"
@@ -75,7 +75,7 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
             args = parser.parse_args()
-            args = namespace_to_nested_namespace(args)
+            args = key_to_nested_key(args)
             return main(args)
 
         return _inner_function
@@ -103,14 +103,14 @@ def import_class(class_string: str) -> Type[Any]:
     return class_obj
 
 
-def instantiate(namespace: Namespace, **kwargs) -> Any:
+def instantiate(key: Key, **kwargs) -> Any:
     """
-    Instantiate a class object using a Namespace object.
-    The Namespace object should contain the key "_target_" to
+    Instantiate a class object using a Key object.
+    The Key object should contain the key "_target_" to
     specify the class to instantiate.
 
     Args:
-        namespace (Namespace): A Namespace object containing the key "_target_"
+        key (Key): A Key object containing the key "_target_"
             to specify the class, along with any additional keyword
             arguments for the class.
 
@@ -120,7 +120,7 @@ def instantiate(namespace: Namespace, **kwargs) -> Any:
     Raises:
         TypeError: If the class is missing specific parameters.
     """
-    obj_kwargs = vars(namespace).copy()
+    obj_kwargs = vars(key).copy()
     class_obj = import_class(obj_kwargs[TARGET_KEYWORD])
     del obj_kwargs[TARGET_KEYWORD]
 
@@ -142,14 +142,14 @@ def instantiate(namespace: Namespace, **kwargs) -> Any:
     
     return class_obj(**obj_kwargs)
 
-def instantiate_all(namespace: Namespace, **kwargs) -> Tuple[Any]:
+def instantiate_all(key: Key, **kwargs) -> Tuple[Any]:
     """
-    Instantiate a tuple of class objects using a Namespace object.
-    The Namespace object should contain other Namespace objects where the key 
+    Instantiate a tuple of class objects using a Key object.
+    The Key object should contain other Key objects where the key 
     "_target_" is at the top level, which specifies the class to instantiate.
 
     Args:
-        namespace (Namespace): A Namespace object containing the key "_target_"
+        key (Key): A Key object containing the key "_target_"
             to specify the class , along with any additional keyword arguments for the class.
 
     Returns:
@@ -158,7 +158,7 @@ def instantiate_all(namespace: Namespace, **kwargs) -> Tuple[Any]:
     Raises:
         ValueError: If any subconfig does not have "_target_" key.
     """
-    collection_dict = vars(namespace).copy()
+    collection_dict = vars(key).copy()
 
     objects = []
 

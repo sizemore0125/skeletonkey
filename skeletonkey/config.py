@@ -16,20 +16,20 @@ import yaml
 BASE_DEFAULT_KEYWORD: str = "defaults"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 
-class Namespace():
+class Key():
     def __init__(self, *args, **kwargs):
         """
-        Initializes the namespace from a dictionary or from kwargs.\n
+        Initializes the key from a dictionary or from kwargs.\n
 
         Args:
             Either a single dictionary as an arg or suply a number of kwargs.
         """
 
         if (len(args) != 0) and (len(kwargs) != 0):
-            raise ValueError("Namespace should not receive args and kwargs at the same time.")
+            raise ValueError("Key should not receive args and kwargs at the same time.")
         
         elif not (len(args) == 0 or len(args) == 1):
-            raise ValueError("Namespace should not receive more than one non-keyword argument.")
+            raise ValueError("Key should not receive more than one non-keyword argument.")
 
 
         if len(args) == 1:
@@ -42,14 +42,14 @@ class Namespace():
 
     def _init_from_dict(self, dictionary: dict):
         """
-        Initialize the Namespace from a dictionary
+        Initialize the Key from a dictionary
 
         Args:
             dictionary (dict): The dictionary to be converted.
         """
         for key, value in dictionary.items():
             if isinstance(value, dict):
-                value = Namespace(value)
+                value = Key(value)
        
             self[key] = value
 
@@ -68,21 +68,21 @@ class Namespace():
         return self._subspace_str(self, 0)[1:]
 
     def __repr__(self):
-        return f"Namespace({self._subspace_str(self, 1)})"
+        return f"Key({self._subspace_str(self, 1)})"
 
-    def _subspace_str(self, subspace: "Namespace", tab_depth:int):
+    def _subspace_str(self, subspace: "Key", tab_depth:int):
         """
         Convert a given subspace to a string with the given tab-depth
         
         args:
-            subspace: A Namespace object
+            subspace: A Key object
             tab_depth: an integer representing the current tab depth
         """
         s = ""
         for k, v in subspace.__dict__.items():
             s += "\n" + "  "*tab_depth + k + ": "
             
-            if isinstance(v, Namespace):
+            if isinstance(v, Key):
                 s+= "\n"
                 s+= self._subspace_str(v, tab_depth+1)[1:] # [1:] gets rid of uneccesary leading \n
             else:
@@ -369,18 +369,18 @@ def add_args_from_dict(
                 )
 
 
-def namespace_to_nested_namespace(namespace: Namespace) -> Namespace:
+def key_to_nested_key(key: Key) -> Key:
     """
-    Convert an Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
+    Convert an Key object with 'key1.keyn' formatted keys into a nested Key object.
 
     Args:
-        namespace (Namespace): The Namespace object to be converted.
+        key (Key): The Key object to be converted.
 
     Returns:
-        Namespace: A nested Namespace representation of the input Namespace object.
+        Key: A nested Key representation of the input Key object.
     """
     nested_dict = {}
-    for key, value in vars(namespace).items():
+    for key, value in vars(key).items():
         keys = key.split(".")
         current_dict = nested_dict
         for sub_key in keys[:-1]:
@@ -389,4 +389,4 @@ def namespace_to_nested_namespace(namespace: Namespace) -> Namespace:
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return Namespace(nested_dict)
+    return Key(nested_dict)
