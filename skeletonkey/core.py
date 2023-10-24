@@ -10,6 +10,7 @@ from .config import (
     add_args_from_dict,
     add_yaml_extension,
     namespace_to_nested_namespace,
+    Namespace
 )
 
 TARGET_KEYWORD: str = "_target_"
@@ -102,14 +103,14 @@ def import_class(class_string: str) -> Type[Any]:
     return class_obj
 
 
-def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
+def instantiate(namespace: Namespace, **kwargs) -> Any:
     """
     Instantiate a class object using a Namespace object.
     The Namespace object should contain the key "_target_" to
     specify the class to instantiate.
 
     Args:
-        namespace (argparse.Namespace): A Namespace object containing the key "_target_"
+        namespace (Namespace): A Namespace object containing the key "_target_"
             to specify the class, along with any additional keyword
             arguments for the class.
 
@@ -141,14 +142,14 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     
     return class_obj(**obj_kwargs)
 
-def instantiate_all(namespace: argparse.Namespace, **kwargs) -> Tuple[Any]:
+def instantiate_all(namespace: Namespace, **kwargs) -> Tuple[Any]:
     """
     Instantiate a tuple of class objects using a Namespace object.
     The Namespace object should contain other Namespace objects where the key 
     "_target_" is at the top level, which specifies the class to instantiate.
 
     Args:
-        namespace (argparse.Namespace): A Namespace object containing the key "_target_"
+        namespace (Namespace): A Namespace object containing the key "_target_"
             to specify the class , along with any additional keyword arguments for the class.
 
     Returns:

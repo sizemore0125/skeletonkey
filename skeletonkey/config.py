@@ -16,6 +16,91 @@ import yaml
 BASE_DEFAULT_KEYWORD: str = "defaults"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 
+class Namespace():
+    def __init__(self, *args, **kwargs):
+        """
+        Initializes the namespace from a dictionary or from kwargs.\n
+
+        Args:
+            Either a single dictionary as an arg or suply a number of kwargs.
+        """
+
+        if (len(args) != 0) and (len(kwargs) != 0):
+            raise ValueError("Namespace should not receive args and kwargs at the same time.")
+        
+        elif not (len(args) == 0 or len(args) == 1):
+            raise ValueError("Namespace should not receive more than one non-keyword argument.")
+
+
+        if len(args) == 1:
+            if not isinstance(args[0], dict):
+                raise ValueError("Supplied arg must be a dictionary")
+            self._init_from_dict(args[0])
+        else:
+            self._init_from_dict(kwargs)
+
+
+    def _init_from_dict(self, dictionary: dict):
+        """
+        Initialize the Namespace from a dictionary
+
+        Args:
+            dictionary (dict): The dictionary to be converted.
+        """
+        for key, value in dictionary.items():
+            if isinstance(value, dict):
+                value = Namespace(value)
+       
+            self[key] = value
+
+    def __getitem__(self, key:str):
+        print(key)
+        return self.__getattribute__(key)
+
+    def __setitem__(self, key: str, value):
+        self.__setattr__(key, value)
+
+
+    def __delitem__(self, key: str):
+        self.__delattr__()
+
+    def __str__(self):
+        return self._subspace_str(self, 0)[1:]
+
+    def __repr__(self):
+        return f"Namespace({self._subspace_str(self, 1)})"
+
+    def _subspace_str(self, subspace: "Namespace", tab_depth:int):
+        """
+        Convert a given subspace to a string with the given tab-depth
+        
+        args:
+            subspace: A Namespace object
+            tab_depth: an integer representing the current tab depth
+        """
+        s = ""
+        for k, v in subspace.__dict__.items():
+            s += "\n" + "  "*tab_depth + k + ": "
+            
+            if isinstance(v, Namespace):
+                s+= "\n"
+                s+= self._subspace_str(v, tab_depth+1)[1:] # [1:] gets rid of uneccesary leading \n
+            else:
+                s += str(v)
+
+        return s
+
+
+            
+        
+
+
+        
+    
+
+
+
+
 def find_yaml_path(file_path: str) -> str:
     """
     Given a file path, this function checks if a YAML file exists with either
@@ -284,31 +369,15 @@ def add_args_from_dict(
                 )
 
 
-def dict_to_namespace(dictionary: dict) -> argparse.Namespace:
+def namespace_to_nested_namespace(namespace: Namespace) -> Namespace:
     """
-    Convert a dictionary to an argparse.Namespace object recursively.
+    Convert an Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
 
     Args:
-        dictionary (dict): The dictionary to be converted.
+        namespace (Namespace): The Namespace object to be converted.
 
     Returns:
-        argparse.Namespace: A Namespace object representing the input dictionary.
-    """
-    for key, value in dictionary.items():
-        if isinstance(value, dict):
-            dictionary[key] = dict_to_namespace(value)
-    return argparse.Namespace(**dictionary)
-
-
-def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Namespace:
-    """
-    Convert an argparse.Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
-
-    Args:
-        namespace (argparse.Namespace): The Namespace object to be converted.
-
-    Returns:
-        argparse.Namespace: A nested Namespace representation of the input Namespace object.
+        Namespace: A nested Namespace representation of the input Namespace object.
     """
     nested_dict = {}
     for key, value in vars(namespace).items():
@@ -320,4 +389,4 @@ def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Nam
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return dict_to_namespace(nested_dict)
+    return Namespace(nested_dict)
