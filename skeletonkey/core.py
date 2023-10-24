@@ -136,7 +136,7 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     if len(missing_parameters) != 0:
         raise TypeError(
             f"missing {len(missing_parameters)} required positional(s) argument: {', '.join(missing_parameters)}."
-            + "Add it to your config or as a keyword argument to skeletonkey.instantiate()."
+            + " Add it to your config or as a keyword argument to skeletonkey.instantiate()."
         )
     
     return class_obj(**obj_kwargs)

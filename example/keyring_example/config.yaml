@@ -1,0 +1,7 @@
+keyring:
+  models: 
+    model1: subconfigs/model.yaml
+    model2: subconfigs/model.yaml
+  datasets:
+    mnist: subconfigs/mnist.yaml
+    iris: subconfigs/iris.yaml

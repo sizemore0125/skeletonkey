@@ -40,7 +40,7 @@ To run the example above, create a config.yaml file with the following content:
 ```yaml
 epochs: 128
 model:
-  _target_: MyModel
+  _target_: main.MyModel
   layer_size: 128
   activation: relu
 ```
@@ -64,6 +64,24 @@ python project.py --model.parameters.layer_size 256
 ```
 
 The resulting Namespace object will contain nested Namespace objects that can be accessed using dot notation, such as args.model.parameters.layer_size.
+
+
+#### Defining Flags in Configuration
+
+Flags can be defined in the configuration YAML file using the `?` prefix followed by the flag name. The value of the flag is set as `true` or `false`. Flags allow a user to switch to debug mode without having to modify the configuration file or temporarily enable/disable specific features for testing without changing the configuration.
+
+For example:
+```yaml
+?debug: true
+```
+In the above example, a flag named `debug` is defined and set to `true`.
+
+Once defined in the configuration, flags can be overridden using command-line arguments. To override a flag, simply pass the flag name prefixed with `--`.
+```
+python your_script.py --debug
+```
+
+Executing the above command will flip the value of the `debug` flag. If it was initially set to `true` in the configuration YAML, it will be changed to `false`, and vice versa.
 
 ### Default Configuration Files
 
@@ -129,3 +147,45 @@ print("Batch size: ", args.batch_size)
 print("Dropout: ", args.dropout)
 print("Optimizer: ", args.optimizer)
 ```
+
+
+### Using Modular Subconfigurations
+
+`skeletonkey` introduces the `keyring` feature, allowing users to modularize their configurations using arbitrary subconfigurations. This feature promotes reusability of common configurations and enhances readability by segregating configurations into logical sub-units.
+
+The `keyring` feature requires users to define a `keyring` section in their main configuration file. Within this section, users can reference various subconfigurations that reside in separate files.
+
+For example:
+```yaml
+keyring:
+  models: 
+    model1: subconfigs/model.yaml
+    model2: subconfigs/model.yaml
+  datasets:
+    mnist: subconfigs/mnist.yaml
+    iris: subconfigs/iris.yaml
+```
+
+In the above configuration, `model1`, `model2`, `mnist`, and `iris` are references to separate subconfigurations that are stored in their respective YAML files under the `subconfigs` directory. Using the `skeletonkey.instantiate` method, users can create instances of the `MyModel` class with the specified parameters from the subconfiguration.
+
+Given this setup, here's how you can access values from these subconfigurations in your Python code:
+
+```python
+@skeletonkey.unlock("config.yaml")
+def main(args):
+    model1_config = args.models.model1
+    model2_config = args.models.model2
+    mnist_targets = args.datasets.mnist.num_targets
+    iris_targets = args.datasets.iris.num_targets
+```
+Note: This assumes that num_targets is defined in both the mnist and the iris subconfigs.
+
+### **Using Environment Variables in Configuration**
+
+Environment variables can be incorporated in the configuration YAML file by using the `$` prefix followed by the name of the environment variable. This feature allows the user to store sensitive information, like API keys or database credentials, outside of the configuration file for security reasons. Additionally, a user can use different configurations for development, staging, and production environments by merely setting environment variables.
+
+For example: 
+```yaml
+$DATABASE_URL: "default_database_url"
+```
+In the above example, the configuration will look for an environment variable named `DATABASE_URL`. If the environment variable exists, its value will be used; if not, the fallback value `"default_database_url"` will be utilized.
