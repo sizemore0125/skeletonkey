@@ -1,0 +1,2 @@
+dropout: 0.5
+optimizer: adam
