@@ -13,6 +13,82 @@ from typing import List
 
 import yaml
 
+BASE_DEFAULT_KEYWORD: str = "defaults"
+BASE_COLLECTION_KEYWORD: str = "keyring"
+
+class Config():
+    def __init__(self, *args, **kwargs):
+        """
+        Initializes the config from a dictionary or from kwargs.\n
+
+        Args:
+            Either a single dictionary as an arg or suply a number of kwargs.
+        """
+
+        if (len(args) != 0) and (len(kwargs) != 0):
+            raise ValueError("Config should not receive args and kwargs at the same time.")
+        
+        elif not (len(args) == 0 or len(args) == 1):
+            raise ValueError("Config should not receive more than one non-keyword argument.")
+
+
+        if len(args) == 1:
+            if not isinstance(args[0], dict):
+                raise ValueError("Supplied arg must be a dictionary")
+            self._init_from_dict(args[0])
+        else:
+            self._init_from_dict(kwargs)
+
+
+    def _init_from_dict(self, dictionary: dict):
+        """
+        Initialize the config from a dictionary
+
+        Args:
+            dictionary (dict): The dictionary to be converted.
+        """
+        for key, value in dictionary.items():
+            if isinstance(value, dict):
+                value = Config(value)
+       
+            self[key] = value
+
+    def __getitem__(self, key:str):
+        return self.__getattribute__(key)
+
+    def __setitem__(self, key: str, value):
+        self.__setattr__(key, value)
+
+
+    def __delitem__(self, key: str):
+        self.__delattr__()
+
+    def __str__(self):
+        return self._subconfig_str(self, 0)[1:]
+
+    def __repr__(self):
+        return f"Config({self._subconfig_str(self, 1)})"
+
+    def _subconfig_str(self, subspace: "Config", tab_depth:int):
+        """
+        Convert a given subconfig to a string with the given tab-depth
+        
+        args:
+            subspace: A Config object
+            tab_depth: an integer representing the current tab depth
+        """
+        s = ""
+        for k, v in subspace.__dict__.items():
+            s += "\n" + "  "*tab_depth + k + ": "
+            
+            if isinstance(v, Config):
+                s+= "\n"
+                s+= self._subconfig_str(v, tab_depth+1)[1:] # [1:] gets rid of uneccesary leading \n
+            else:
+                s += str(v)
+
+        return s
+
 
 def find_yaml_path(file_path: str) -> str:
     """
@@ -171,7 +247,7 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
 
 
 def load_yaml_config(
-    config_path: str, config_name: str, default_keyword: str = "defaults", collection_keyword: str = "keyring"
+    config_path: str, config_name: str, default_keyword: str = BASE_DEFAULT_KEYWORD, collection_keyword: str = BASE_COLLECTION_KEYWORD
 ) -> dict:
     """
     Load a YAML configuration file and update it with default configurations.
@@ -249,7 +325,7 @@ def unpack_collection(config, config_path, collection_keyword):
 
 
 def add_args_from_dict(
-    arg_parser: argparse.ArgumentParser, config: dict, prefix=""
+    arg_parser: argparse.ArgumentParser, config_dict: dict, prefix=""
 ) -> None:
     """
     Add arguments to an ArgumentParser instance using key-value pairs from a
@@ -262,7 +338,7 @@ def add_args_from_dict(
                        the arguments and their default values.
         prefix (str, optional): The prefix string for nested keys. Defaults to ''.
     """
-    for key, value in config.items():
+    for key, value in config_dict.items():
         if isinstance(value, dict):
             add_args_from_dict(arg_parser, value, f"{prefix}{key}.")
         else:
@@ -282,34 +358,18 @@ def add_args_from_dict(
                 )
 
 
-def dict_to_namespace(dictionary: dict) -> argparse.Namespace:
+def config_to_nested_config(config: Config) -> Config:
     """
-    Convert a dictionary to an argparse.Namespace object recursively.
+    Convert an Config object with 'key1.keyn' formatted keys into a nested Config object.
 
     Args:
-        dictionary (dict): The dictionary to be converted.
+        config (Config): The Config object to be converted.
 
     Returns:
-        argparse.Namespace: A Namespace object representing the input dictionary.
-    """
-    for key, value in dictionary.items():
-        if isinstance(value, dict):
-            dictionary[key] = dict_to_namespace(value)
-    return argparse.Namespace(**dictionary)
-
-
-def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Namespace:
-    """
-    Convert an argparse.Namespace object with 'key1.keyn' formatted keys into a nested Namespace object.
-
-    Args:
-        namespace (argparse.Namespace): The Namespace object to be converted.
-
-    Returns:
-        argparse.Namespace: A nested Namespace representation of the input Namespace object.
+        Config: A nested Config representation of the input Config object.
     """
     nested_dict = {}
-    for key, value in vars(namespace).items():
+    for key, value in vars(config).items():
         keys = key.split(".")
         current_dict = nested_dict
         for sub_key in keys[:-1]:
@@ -318,4 +378,4 @@ def namespace_to_nested_namespace(namespace: argparse.Namespace) -> argparse.Nam
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return dict_to_namespace(nested_dict)
+    return Config(nested_dict)

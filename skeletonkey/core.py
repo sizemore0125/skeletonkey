@@ -9,9 +9,11 @@ from .config import (
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
-    namespace_to_nested_namespace,
+    config_to_nested_config,
+    Config
 )
 
+TARGET_KEYWORD: str = "_target_"
 
 def get_config_dir_path(config_path: str) -> str:
     """
@@ -73,7 +75,7 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
             args = parser.parse_args()
-            args = namespace_to_nested_namespace(args)
+            args = config_to_nested_config(args)
             return main(args)
 
         return _inner_function
@@ -101,14 +103,14 @@ def import_class(class_string: str) -> Type[Any]:
     return class_obj
 
 
-def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
+def instantiate(config: Config, target_keyword=TARGET_KEYWORD, **kwargs) -> Any:
     """
-    Instantiate a class object using a Namespace object.
-    The Namespace object should contain the key "_target_" to
+    Instantiate a class object using a Config object.
+    The Config object should contain the key "_target_" to
     specify the class to instantiate.
 
     Args:
-        namespace (argparse.Namespace): A Namespace object containing the key "_target_"
+        config (Config): A Config object containing the key "_target_"
             to specify the class, along with any additional keyword
             arguments for the class.
 
@@ -118,8 +120,7 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     Raises:
         TypeError: If the class is missing specific parameters.
     """
-    obj_kwargs = vars(namespace).copy()
-    target_keyword = "_target_"
+    obj_kwargs = vars(config).copy()
     class_obj = import_class(obj_kwargs[target_keyword])
     del obj_kwargs[target_keyword]
 
@@ -141,14 +142,14 @@ def instantiate(namespace: argparse.Namespace, **kwargs) -> Any:
     
     return class_obj(**obj_kwargs)
 
-def instantiate_all(namespace: argparse.Namespace, **kwargs) -> Tuple[Any]:
+def instantiate_all(config: Config, target_keyword=TARGET_KEYWORD, **kwargs) -> Tuple[Any]:
     """
-    Instantiate a tuple of class objects using a Namespace object.
-    The Namespace object should contain other Namespace objects where the key 
+    Instantiate a tuple of class objects using a Config object.
+    The Config object should contain other Config objects where the key 
     "_target_" is at the top level, which specifies the class to instantiate.
 
     Args:
-        namespace (argparse.Namespace): A Namespace object containing the key "_target_"
+        config (Config): A Config object containing the key "_target_"
             to specify the class , along with any additional keyword arguments for the class.
 
     Returns:
@@ -157,14 +158,14 @@ def instantiate_all(namespace: argparse.Namespace, **kwargs) -> Tuple[Any]:
     Raises:
         ValueError: If any subconfig does not have "_target_" key.
     """
-    collection_dict = vars(namespace).copy()
+    collection_dict = vars(config).copy()
 
     objects = []
 
     for obj_key in collection_dict.keys():
         obj_namespace = collection_dict[obj_key]
 
-        if not hasattr(obj_namespace, "_target_"):
+        if not hasattr(obj_namespace, target_keyword):
             raise ValueError(f"subconfig ({obj_key}) in collection does not have '_target_' key at the top level.")
         
         obj = instantiate(obj_namespace, **kwargs)
