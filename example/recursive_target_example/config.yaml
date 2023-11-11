@@ -1,0 +1,12 @@
+a_obj:
+  _target_: "main.A"
+  a_arg: 10
+  b_obj:
+    _target_: "main.B"
+    b_arg: 20
+    c_obj1:
+      _target_: "main.C"
+      c_arg: 30
+    c_obj2:
+      _target_: "main.C"
+      c_arg: 40
