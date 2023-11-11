@@ -1,4 +1,7 @@
-import skeletonkey
+# Adds the local skeletonkey source code to path, so that version is imported
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
+
 
 class MyModel:
     def __init__(self, layer_size: int, activation: str) -> None:
