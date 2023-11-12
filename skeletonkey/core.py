@@ -103,7 +103,7 @@ def import_class(class_string: str) -> Type[Any]:
     return class_obj
 
 
-def instantiate(config: Config, target_keyword=TARGET_KEYWORD, **kwargs) -> Any:
+def instantiate(config: Config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, **kwargs) -> Any:
     """
     Instantiate a class object using a Config object.
     The Config object should contain the key "_target_" to
@@ -123,6 +123,11 @@ def instantiate(config: Config, target_keyword=TARGET_KEYWORD, **kwargs) -> Any:
     obj_kwargs = vars(config).copy()
     class_obj = import_class(obj_kwargs[target_keyword])
     del obj_kwargs[target_keyword]
+
+    if _instantiate_recursive:
+        for k, v in obj_kwargs.items():
+            if isinstance(v, Config) and (target_keyword in vars(v)):
+                obj_kwargs[k] = instantiate(v)
 
     obj_kwargs.update(kwargs)
 
