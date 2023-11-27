@@ -2,6 +2,7 @@
 import os, sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 
+import skeletonkey
 
 class MyModel:
     def __init__(self, layer_size: int, activation: str) -> None:
