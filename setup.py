@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="skeletonkey",
-    version="0.2.0",
+    version='{{VERSION_PLACEHOLDER}}',
     description="A bare-bones configuration managment tool.",
     packages=find_packages(),
     long_description=long_description,
