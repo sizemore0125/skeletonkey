@@ -9,6 +9,7 @@ from .config import (
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
+    update_flat_config_types,
     config_to_nested_config,
     Config
 )
@@ -75,6 +76,7 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
             parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
             args = parser.parse_args()
+            args = update_flat_config_types(args)
             args = config_to_nested_config(args)
             return main(args)
 
