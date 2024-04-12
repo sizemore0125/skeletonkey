@@ -6,12 +6,12 @@ This code provides a set of utility functions to handle YAML configurations.
 It facilitates the management of complex configurations for applications using YAML 
 files and enables the dynamic loading of classes and their arguments at runtime.
 """
-
+import yaml
 import argparse
 import os
 from typing import List
 
-import yaml
+from .instantiate import instantiate
 
 BASE_DEFAULT_KEYWORD: str = "defaults"
 BASE_COLLECTION_KEYWORD: str = "keyring"
@@ -68,6 +68,12 @@ class Config():
 
     def __repr__(self):
         return f"Config({self._subconfig_str(self, 1)})"
+    
+    def instantiate(self, **kwargs):
+        return instantiate(self, **kwargs)
+
+    def __call__(self, **kwargs):
+        return self.instantiate(**kwargs)
 
     def _subconfig_str(self, subspace: "Config", tab_depth:int):
         """
