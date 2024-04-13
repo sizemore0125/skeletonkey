@@ -11,11 +11,20 @@ class MyModel:
 
 @skeletonkey.unlock("config.yaml")
 def main(args):
+    print(args)
     model = skeletonkey.instantiate(args.model)
+    print("Instantiate Function:")
     print("Model layer size: ", model.layer_size)
     print("Model activation: ", model.activation)
     print("Number of Epochs: ", args.epochs)
     print("Debug Flag: ", args.debug)
+
+    model2 = args.model.instantiate()
+    print("Instantiate Method:")
+    print("Model layer size: ", model.layer_size)
+    print("Model activation: ", model.activation)
+    print("Number of Epochs: ", args.epochs)
+    print("Debug Flag: ", args.debug)   
 
 if __name__ == "__main__":  
     main()
