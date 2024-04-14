@@ -5,6 +5,7 @@ import sys
 from typing import Callable, Optional
 
 from .config import (
+    get_command_line_config,
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
@@ -44,7 +45,7 @@ def get_config_dir_path(config_path: str) -> str:
     return config_path
 
 
-def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
+def unlock(config_name: Optional[str] = None, config_path: Optional[str] = None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
     main function from a YAML file.
@@ -59,8 +60,20 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
                   parse the configuration file and inject the arguments into the
                   main function.
     """
+    parser = argparse.ArgumentParser()
+    command_line_config_path, remaining_args = get_command_line_config(parser)
+    
+    if command_line_config_path:
+        config_name = os.path.abspath(command_line_config_path)
+        config_path = None
+
+    if config_name == None and command_line_config_path == None:
+        raise ValueError("config path is neither specified in 'unlock' nor via the command line.")
+    
     config_path = config_path if config_path else os.path.dirname(config_name)
-    config_path = get_config_dir_path(config_path)
+    
+    if not command_line_config_path:
+        config_path = get_config_dir_path(config_path)
 
     config_name = add_yaml_extension(config_name)
     config_name = os.path.basename(config_name)
@@ -70,9 +83,8 @@ def unlock(config_name: str, config_path: Optional[str] = None) -> Callable:
     def _parse_config(main: Callable):
         @functools.wraps(main)
         def _inner_function():
-            parser = argparse.ArgumentParser()
             add_args_from_dict(parser, config)
-            args = parser.parse_args()
+            args = parser.parse_args(remaining_args)
             args = config_to_nested_config(args)
             return main(args)
 
