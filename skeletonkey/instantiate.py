@@ -3,7 +3,7 @@ from typing import Type, Any, Tuple
 
 TARGET_KEYWORD: str = "_target_"
 
-def import_class(class_string: str) -> Type[Any]:
+def import_target(class_string: str) -> Type[Any]:
     """
     Dynamically import a class using its full module path and class name.
 
@@ -17,10 +17,10 @@ def import_class(class_string: str) -> Type[Any]:
     """
     parts = class_string.split(".")
     module_name = ".".join(parts[:-1])
-    class_name = parts[-1]
-    module = __import__(module_name, fromlist=[class_name])
-    class_obj = getattr(module, class_name)
-    return class_obj
+    name = parts[-1]
+    module = __import__(module_name, fromlist=[name])
+    obj = getattr(module, name)
+    return obj
 
 
 def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, **kwargs) -> Any:
@@ -41,7 +41,7 @@ def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=Tr
         TypeError: If the class is missing specific parameters.
     """
     obj_kwargs = vars(config).copy()
-    class_obj = import_class(obj_kwargs[target_keyword])
+    class_obj = import_target(obj_kwargs[target_keyword])
     del obj_kwargs[target_keyword]
 
     if _instantiate_recursive:
@@ -97,3 +97,22 @@ def instantiate_all(config, target_keyword=TARGET_KEYWORD, **kwargs) -> Tuple[An
         objects.append(obj)
     
     return tuple(objects)
+
+def fetch(config, target_keyword=TARGET_KEYWORD):
+    """
+    Fetch a value from a python module based on the "_target_" key.
+    Like instantiate but does not call/instantiate the target.
+    Mainly intended to retrieve functions/
+
+    Args:
+        config (Config): A Config object containing the key "_target_"
+            to specify the object
+
+    Returns:
+        Any: The value associated with the specified "_target_".
+    """
+
+    obj_kwargs = vars(config).copy()
+    obj = import_target(obj_kwargs[target_keyword])
+
+    return obj
