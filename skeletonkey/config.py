@@ -6,12 +6,12 @@ This code provides a set of utility functions to handle YAML configurations.
 It facilitates the management of complex configurations for applications using YAML 
 files and enables the dynamic loading of classes and their arguments at runtime.
 """
-
+import yaml
 import argparse
 import os
-from typing import List
+from typing import List, Tuple
 
-import yaml
+from .instantiate import instantiate
 
 BASE_DEFAULT_KEYWORD: str = "defaults"
 BASE_COLLECTION_KEYWORD: str = "keyring"
@@ -68,6 +68,12 @@ class Config():
 
     def __repr__(self):
         return f"Config({self._subconfig_str(self, 1)})"
+    
+    def instantiate(self, **kwargs):
+        return instantiate(self, **kwargs)
+
+    def __call__(self, **kwargs):
+        return self.instantiate(**kwargs)
 
     def _subconfig_str(self, subspace: "Config", tab_depth:int):
         """
@@ -370,6 +376,27 @@ def update_flat_config_types(flat_config: Config) -> Config:
         for key, value in vars(flat_config).items()
     })
         
+
+
+def get_command_line_config(arg_parser: argparse.ArgumentParser, config_argument_keyword: str="config") -> Tuple[str, List[str]]:
+    """
+    Check to see if the user specified an alternative config via the command line. If so,
+    return the path of that config, and the remaining arguments. Otherwise, return None
+    and the remaining arguments.
+
+    Args:
+        arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
+        config_argument_keyword (str): Default keyword to accept new config path from the 
+            command line.
+    
+    Returns:
+        str: A string of the path to the alternate config.
+        List[str]: All remaining arguments.
+    """
+    arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
+    known_args, unknown_args = arg_parser.parse_known_args()
+    config_path = vars(known_args)[config_argument_keyword]
+    return config_path, unknown_args
 
 
 def config_to_nested_config(config: Config) -> Config:
