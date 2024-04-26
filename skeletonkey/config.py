@@ -39,7 +39,36 @@ class Config():
         else:
             self._init_from_dict(kwargs)
 
+    def update(self, dictionary: dict):
+        """
+        Take a dictionary of keys in dot notation and place those values into the config. 
+        This will overwrite values if they are present or create them if they are not.
 
+        Args:
+            update_config (dict): The keys/values to place into the config. The keys are in
+            dot notation representing
+        """
+        update_config = config_to_nested_config(Config(dictionary))
+        self._update_from_config(update_config)
+
+
+    def _update_from_config(self, update_config: 'Config'):
+        """
+        Recursively place all of the values from update_config into self, overwriting them if they
+        exist and adding them if they do not.        
+        """
+
+        for k, v in update_config.__dict__.items():
+            if isinstance(v, Config):
+                if k not in self.__dict__.keys():
+                    self[k] = Config({})
+
+                self[k]._update_from_config(update_config[k])
+            
+            else:
+                self[k] = update_config[k]
+
+        
     def _init_from_dict(self, dictionary: dict):
         """
         Initialize the config from a dictionary
