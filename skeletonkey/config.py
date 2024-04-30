@@ -382,7 +382,7 @@ def add_args_from_dict(
                 if key[1:] in os.environ:
                     value = os.environ[key[1:]]
                 arg_parser.add_argument(
-                    f"--{prefix}{key[1:]}", default=value, type=type(value)
+                    f"--{prefix}{key[1:]}", default=value
                 )
             elif key.startswith("?"):
                 arg_parser.add_argument(
@@ -390,8 +390,22 @@ def add_args_from_dict(
                 )
             else:
                 arg_parser.add_argument(
-                    f"--{prefix}{key}", default=value, type=type(value)
+                    f"--{prefix}{key}", default=value
                 )
+
+def update_flat_config_types(flat_config: Config) -> Config:
+    """
+    Given a flat config containing some string values, parse those string values as if they were
+    yaml arguemnts into the corresponding python type and return an updated config.
+
+    Args:
+        config (Config): The flat Config whose values should be parsed
+    """
+    return Config({
+        key: yaml.safe_load(value) if isinstance(value, str) else value
+        for key, value in vars(flat_config).items()
+    })
+        
 
 
 def get_command_line_config(arg_parser: argparse.ArgumentParser, config_argument_keyword: str="config") -> Tuple[str, List[str]]:
