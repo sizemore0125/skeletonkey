@@ -9,7 +9,7 @@ files and enables the dynamic loading of classes and their arguments at runtime.
 import yaml
 import argparse
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from .instantiate import instantiate
 
@@ -39,7 +39,7 @@ class Config():
         else:
             self._init_from_dict(kwargs)
 
-    def update(self, update_config: dict|'Config'):
+    def update(self, update_config: Union[dict, 'Config']):
         """
         Take a config in some format and place those values into the config.
         This will overwrite values if they are present or create them if they are not.
