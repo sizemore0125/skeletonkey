@@ -13,7 +13,7 @@ from typing import List, Tuple, Union
 
 from .instantiate import instantiate
 
-BASE_DEFAULT_KEYWORD: str = "defaults"
+BASE_PROFILES_KEYWORD: str = "profiles"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 
 class Config():
@@ -224,47 +224,6 @@ def add_yaml_extension(path: str) -> str:
     return path
 
 
-def get_default_yaml_paths_from_dict(default_yaml: dict) -> List[str]:
-    """
-    Process a nested dictionary of default YAML file paths, flattening the
-    dictionary, converting it to a list of paths, and ensuring each path has
-    a '.yaml' extension.
-
-    Args:
-        default_yaml (dict): A nested dictionary containing default YAML file paths.
-
-    Returns:
-        List[str]: A list of processed and validated default YAML file paths.
-    """
-    default_yaml = dict_to_path(default_yaml)
-    default_yaml = [add_yaml_extension(filename) for filename in default_yaml]
-    return default_yaml
-
-
-def get_default_args_from_dict(config_path: str, default_yaml: dict) -> dict:
-    """
-    Load a YAML default configuration files in dict format and returns a dictionary of args.
-
-    Args:
-        config_path (str): The file path to the YAML configuration file.
-        default_yml (dict): A dictionary data structure representing the paths to many
-            YAML configuration files.
-
-    Returns:
-        dict: The updated configuration dictionary."""
-    yaml_paths = get_default_yaml_paths_from_dict(default_yaml)
-    default_configs = [
-        open_yaml(os.path.join(config_path, yaml_path)) for yaml_path in yaml_paths
-    ]
-    default_config = {
-        key: value
-        for config_dict in default_configs
-        if config_dict
-        for key, value in config_dict.items()
-    }
-    return default_config
-
-
 def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     """
     Load a YAML default configuration files and returns a dictionary of args.
@@ -283,16 +242,15 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
 
 
 def load_yaml_config(
-    config_path: str, config_name: str, default_keyword: str = BASE_DEFAULT_KEYWORD, collection_keyword: str = BASE_COLLECTION_KEYWORD
+    config_path: str, config_name: str, profiles_keyword: str = BASE_PROFILES_KEYWORD, collection_keyword: str = BASE_COLLECTION_KEYWORD
 ) -> dict:
     """
-    Load a YAML configuration file and update it with default configurations.
+    Load a YAML configuration file and update with profiles and collections.
 
     Args:
         config_path (str): The file path to the YAML configuration file.
         config_name (str): The name of the YAML configuration file.
-        default_keyword (str): The keyword used to identify default configurations
-            in the YAML file. Defaults to "defaults".
+        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -300,42 +258,32 @@ def load_yaml_config(
     path = os.path.join(config_path, config_name)
     config = open_yaml(path)
 
-    if default_keyword in config:
-        default_path_dict = config[default_keyword]
-        if isinstance(default_path_dict, dict):
-            default_config = get_default_args_from_dict(config_path, default_path_dict)
-
-            if default_config:
-                config.update(
-                    (key, value)
-                    for key, value in default_config.items()
-                    if key not in config
-                )
-        else:
-            for default_yaml in default_path_dict:
-                if isinstance(default_yaml, dict):
-                    default_config = get_default_args_from_dict(
-                        config_path, default_yaml
-                    )
-
-                elif isinstance(default_yaml, str):
-                    default_config = get_default_args_from_path(
-                        config_path, default_yaml
-                    )
-
-                if default_config:
-                    config.update(
-                        (key, value)
-                        for key, value in default_config.items()
-                        if key not in config
-                    )
-        del config[default_keyword]
+    if profiles_keyword in config:
+        unpack_profiles(config, config_path, profiles_keyword)
 
     if collection_keyword in config:
         unpack_collection(config, config_path, collection_keyword)
 
     
     return config
+
+def unpack_profiles(config, config_path, profiles_keyword):
+    profiles_dict = config[profiles_keyword]
+    for default_yaml in profiles_dict:
+        default_config = get_default_args_from_path(
+            config_path, default_yaml
+        )
+
+        if default_config:
+            config.update(
+                (key, value)
+                for key, value in default_config.items()
+                if key not in config
+            )
+    del config[profiles_keyword]
+
+def unpack_single_profile():
+    pass
 
 def unpack_collection(config, config_path, collection_keyword):
         collections_dict = config[collection_keyword]
