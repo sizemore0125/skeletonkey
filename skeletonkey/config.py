@@ -268,6 +268,9 @@ def load_yaml_config(
     return config
 
 def unpack_profiles(config, config_path, profiles_keyword):
+    # Take profile information as an argument
+    # Raise error if no profiles are specified and there is no default
+
     profiles_dict = config[profiles_keyword]
     for default_yaml in profiles_dict:
         default_config = get_default_args_from_path(
@@ -356,25 +359,38 @@ def update_flat_config_types(flat_config: Config) -> Config:
         
 
 
-def get_command_line_config(arg_parser: argparse.ArgumentParser, config_argument_keyword: str="config") -> Tuple[str, List[str]]:
+def parse_initial_args(arg_parser: argparse.ArgumentParser,
+                            config_argument_keyword: str="config", 
+                            profiles_keyword: str = BASE_PROFILES_KEYWORD) -> Tuple[str, List[str]]:
     """
-    Check to see if the user specified an alternative config via the command line. If so,
-    return the path of that config, and the remaining arguments. Otherwise, return None
+    Check to see if the user specified a config or profile information via the command line. If so,
+    return the path of that config, any profiles information and the remaining arguments. Otherwise, return None
     and the remaining arguments.
 
     Args:
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
         config_argument_keyword (str): Default keyword to accept new config path from the 
             command line.
+        profiles_keyword (str): Default keyword for profiles
     
     Returns:
         str: A string of the path to the alternate config.
+        str: The specified profile
+        List[str]: A list of the profile specifiers.
         List[str]: All remaining arguments.
     """
+
+    arg_parser.add_argument(f"profile", default=None, type=str)
     arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
+    arg_parser.add_argument(f"--{profiles_keyword}", nargs="*", default=[], type=str)
+
     known_args, unknown_args = arg_parser.parse_known_args()
+    
+    profile = known_args.profile
+    profile_specifiers = vars(known_args)[profiles_keyword]
+    
     config_path = vars(known_args)[config_argument_keyword]
-    return config_path, unknown_args
+    return config_path, profile, profile_specifiers, unknown_args
 
 
 def config_to_nested_config(config: Config) -> Config:

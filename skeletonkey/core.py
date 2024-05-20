@@ -5,7 +5,7 @@ import sys
 from typing import Callable, Optional
 
 from .config import (
-    get_command_line_config,
+    parse_initial_args,
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
@@ -46,7 +46,7 @@ def get_config_dir_path(config_path: str) -> str:
     return config_path
 
 
-def unlock(config_name: Optional[str] = None, config_path: Optional[str] = None) -> Callable:
+def unlock(config_name: Optional[str] = None, config_dir: Optional[str] = None) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
     main function from a YAML file.
@@ -62,32 +62,34 @@ def unlock(config_name: Optional[str] = None, config_path: Optional[str] = None)
                   main function.
     """
     parser = argparse.ArgumentParser()
-    command_line_config_path, remaining_args = get_command_line_config(parser)
     
-    if command_line_config_path:
-        config_name = os.path.abspath(command_line_config_path)
-        config_path = None
+    config_dir_command_line, profile, profile_specifiers, remaining_args = parse_initial_args(parser)
+    
 
-    if config_name == None and command_line_config_path == None:
+    if config_dir_command_line is not None:
+        config_name = os.path.abspath(config_dir_command_line)
+        config_dir = None
+        
+    elif config_name is not None:
+        config_dir = get_config_dir_path(os.path.dirname(config_name))
+    
+    else: 
         raise ValueError("config path is neither specified in 'unlock' nor via the command line.")
-    
-    config_path = config_path if config_path else os.path.dirname(config_name)
-    
-    if not command_line_config_path:
-        config_path = get_config_dir_path(config_path)
 
     config_name = add_yaml_extension(config_name)
     config_name = os.path.basename(config_name)
 
-    config = load_yaml_config(config_path, config_name)
+    config = load_yaml_config(config_dir, config_name)
+
+    add_args_from_dict(parser, config)
+
+    args = parser.parse_args(remaining_args)
+    args = update_flat_config_types(args)
+    args = config_to_nested_config(args)
 
     def _parse_config(main: Callable):
         @functools.wraps(main)
         def _inner_function():
-            add_args_from_dict(parser, config)
-            args = parser.parse_args(remaining_args)
-            args = update_flat_config_types(args)
-            args = config_to_nested_config(args)
             return main(args)
 
         return _inner_function
