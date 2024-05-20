@@ -271,7 +271,7 @@ def override_profile_with_specifier(profile_dict: dict, specifier: str, config: 
     alt_profile, *split_specifier, final_key = specifier.split(".")
     config = config[alt_profile]
 
-    for key in split_specifier.keys():
+    for key in split_specifier:
         if key not in config:
             raise ValueError(f"The given profile specifier ({specifier}) can't be matched to any profiles.")
         elif key not in profile_dict.keys():
@@ -303,12 +303,19 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
     
     if isinstance(config[profiles_keyword], dict):
         # Get the default profile or the given profile
-        default_profile = [key for key in config[profiles_keyword].keys() if key[0] == "!"]
+        default_profile = []
+        for key, val  in list(config[profiles_keyword].items()):
+            if key[0] == "~":
+                default_profile.append(key[1:])
+
+                config[profiles_keyword][key[1:]] = val
+                del config[profiles_keyword][key]
+
         if len(default_profile) > 1:
-            raise ValueError("Only one profile may be specified as default using '!'.")
+            raise ValueError("Only one profile may be specified as default.")
+        elif len(default_profile) == 0 and profile is None:
+            raise ValueError("You must specify a profile or assign one to as default using the '~' prefix.")
         elif profile is None:
-            raise ValueError("You must specify a profile or assign one to as default using the '!' prefix.")
-        if profile is None:
             profile = default_profile[0]
 
         profile_dict = config[profiles_keyword][profile]
@@ -321,7 +328,7 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
         queue = [profile_dict]
         while len(queue) != 0:
             current_subdict = queue.pop(0)
-            for k, v in current_subdict:
+            for k, v in current_subdict.items():
                 if isinstance(v, dict):
                     queue.append(v)
                 elif isinstance(v, str):
@@ -457,6 +464,12 @@ def parse_initial_args(arg_parser: argparse.ArgumentParser,
     profile = known_args._main_profile
     profile_specifiers = known_args._profile_specifiers
     
+    if "." not in profile_specifiers[0]:
+        if profile is not None:
+            raise ValueError(f"Cannot specify profile in two places: {profile} vs. {profile_specifiers[0]}")
+        profile = profile_specifiers[0]
+        del profile_specifiers[0]
+
     config_path = known_args._alt_config_name
     return config_path, profile, profile_specifiers, ["_main_profile", "_alt_config_name", "_profile_specifiers"]
 
