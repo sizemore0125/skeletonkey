@@ -61,35 +61,33 @@ def unlock(config_name: Optional[str] = None, config_dir: Optional[str] = None) 
                   parse the configuration file and inject the arguments into the
                   main function.
     """
-    parser = argparse.ArgumentParser()
-    
+    # Parse high-level arguments
+    parser = argparse.ArgumentParser()    
     config_dir_command_line, profile, profile_specifiers, remaining_args = parse_initial_args(parser)
     
 
+    # Find final config name and directory
     if config_dir_command_line is not None:
         config_name = os.path.abspath(config_dir_command_line)
         config_dir = None
-        
     elif config_name is not None:
         config_dir = get_config_dir_path(os.path.dirname(config_name))
-    
     else: 
         raise ValueError("config path is neither specified in 'unlock' nor via the command line.")
+    config_name = os.path.basename(add_yaml_extension(config_name))
 
-    config_name = add_yaml_extension(config_name)
-    config_name = os.path.basename(config_name)
-
-    config = load_yaml_config(config_dir, config_name)
-
-    add_args_from_dict(parser, config)
-
-    args = parser.parse_args(remaining_args)
-    args = update_flat_config_types(args)
-    args = config_to_nested_config(args)
-
+    # Create decorator
     def _parse_config(main: Callable):
         @functools.wraps(main)
         def _inner_function():
+            config = load_yaml_config(config_dir, config_name)
+
+            add_args_from_dict(parser, config)
+
+            args = parser.parse_args(remaining_args)
+            args = update_flat_config_types(args)
+            args = config_to_nested_config(args)
+
             return main(args)
 
         return _inner_function
