@@ -63,7 +63,7 @@ def unlock(config_name: Optional[str] = None, config_dir: Optional[str] = None) 
     """
     # Parse high-level arguments
     parser = argparse.ArgumentParser()    
-    config_dir_command_line, profile, profile_specifiers, remaining_args = parse_initial_args(parser)
+    config_dir_command_line, profile, profile_specifiers, temp_args = parse_initial_args(parser)
     
 
     # Find final config name and directory
@@ -80,12 +80,16 @@ def unlock(config_name: Optional[str] = None, config_dir: Optional[str] = None) 
     def _parse_config(main: Callable):
         @functools.wraps(main)
         def _inner_function():
-            config = load_yaml_config(config_dir, config_name)
+            config = load_yaml_config(config_dir, config_name, profile, profile_specifiers)
 
             add_args_from_dict(parser, config)
 
-            args = parser.parse_args(remaining_args)
+            args = parser.parse_args()
             args = update_flat_config_types(args)
+
+            for temp_arg in temp_args:
+                del args[temp_arg]
+
             args = config_to_nested_config(args)
 
             return main(args)

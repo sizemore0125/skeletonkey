@@ -91,7 +91,7 @@ class Config():
 
 
     def __delitem__(self, key: str):
-        self.__delattr__()
+        self.__delattr__(key)
 
     def __str__(self):
         return self._subconfig_str(self, 0)[1:]
@@ -224,6 +224,64 @@ def add_yaml_extension(path: str) -> str:
     return path
 
 
+def load_yaml_config(config_path: str,
+                     config_name: str,
+                     profile: str,
+                     profile_specifiers: List[str],
+                     profiles_keyword: str = BASE_PROFILES_KEYWORD,
+                     collection_keyword: str = BASE_COLLECTION_KEYWORD) -> dict:
+    """
+    Load a YAML configuration file and update with profiles and collections.
+
+    Args:
+        config_path (str): The file path to the YAML configuration file.
+        config_name (str): The name of the YAML configuration file.
+        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
+
+    Returns:
+        dict: The updated configuration dictionary.
+    """
+    path = os.path.join(config_path, config_name)
+    config = open_yaml(path)
+
+    if profiles_keyword in config:
+        unpack_profiles(config, config_path, profile, profile_specifiers, profiles_keyword)
+
+    if collection_keyword in config:
+        unpack_collection(config, config_path, collection_keyword)
+
+    
+    return config
+
+def override_profile_with_specifier(profile_dict: dict, specifier: str, config: dict):
+    """
+    Will take the section of the config indicated by the specifier and place it in the profile.
+    If such a section does not exist in the profile, it will be created. If it does, it will be 
+    overwritten. If the specifier does not match a subprofile in the config, this will throw an
+    error.
+
+    Args:
+        profile_dict (dict): The dictionary holding the profile to be overwritten.
+        specifier (str): The dot-notation specifier referencing which subconfig to bring into
+            the profile
+        config (dict): The profiles config dictionary holding all of the profiles.
+    """
+
+
+    alt_profile, *split_specifier, final_key = specifier.split(".")
+    config = config[alt_profile]
+
+    for key in split_specifier.keys():
+        if key not in config:
+            raise ValueError(f"The given profile specifier ({specifier}) can't be matched to any profiles.")
+        elif key not in profile_dict.keys():
+            profile_dict[key] = {}
+
+        config  = config[key]
+        profile_dict = profile_dict[key]
+
+    profile_dict[final_key] = config[final_key]
+
 def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     """
     Load a YAML default configuration files and returns a dictionary of args.
@@ -240,42 +298,52 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     default_config = open_yaml(default_config_path)
     return default_config
 
-
-def load_yaml_config(
-    config_path: str, config_name: str, profiles_keyword: str = BASE_PROFILES_KEYWORD, collection_keyword: str = BASE_COLLECTION_KEYWORD
-) -> dict:
-    """
-    Load a YAML configuration file and update with profiles and collections.
-
-    Args:
-        config_path (str): The file path to the YAML configuration file.
-        config_name (str): The name of the YAML configuration file.
-        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
-
-    Returns:
-        dict: The updated configuration dictionary.
-    """
-    path = os.path.join(config_path, config_name)
-    config = open_yaml(path)
-
-    if profiles_keyword in config:
-        unpack_profiles(config, config_path, profiles_keyword)
-
-    if collection_keyword in config:
-        unpack_collection(config, config_path, collection_keyword)
-
+def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: List[str], profiles_keyword: str):
+    default_paths = None
     
-    return config
+    if isinstance(config[profiles_keyword], dict):
+        # Get the default profile or the given profile
+        default_profile = [key for key in config[profiles_keyword].keys() if key[0] == "!"]
+        if len(default_profile) > 1:
+            raise ValueError("Only one profile may be specified as default using '!'.")
+        elif profile is None:
+            raise ValueError("You must specify a profile or assign one to as default using the '!' prefix.")
+        if profile is None:
+            profile = default_profile[0]
 
-def unpack_profiles(config, config_path, profiles_keyword):
-    # Take profile information as an argument
-    # Raise error if no profiles are specified and there is no default
+        profile_dict = config[profiles_keyword][profile]
+        for specifier in profile_specifiers:
+            override_profile_with_specifier(profile_dict, specifier, config[profiles_keyword])
 
-    profiles_dict = config[profiles_keyword]
-    for default_yaml in profiles_dict:
+
+        # Perform BFS on the profile to get all of the paths
+        default_paths = []
+        queue = [profile_dict]
+        while len(queue) != 0:
+            current_subdict = queue.pop(0)
+            for k, v in current_subdict:
+                if isinstance(v, dict):
+                    queue.append(v)
+                elif isinstance(v, str):
+                    default_paths.append(v)
+                elif isinstance(v, list):
+                    default_paths.extend(v)
+                else:
+                    ValueError(f"The type of {v} ({type(v)}) is not a valid path to a default config.")
+    
+    elif isinstance(config[profiles_keyword], list):
+        default_paths = config[profiles_keyword]
+    
+    elif isinstance(config[profiles_keyword], str):
+        default_paths = [config[profiles_keyword]]
+
+    else:
+        ValueError(f" The value '{config[profiles_keyword]}' is not valid for profiles.")
+
+    # Apply all of the paths to the config
+    for default_path in default_paths:
         default_config = get_default_args_from_path(
-            config_path, default_yaml
-        )
+            config_path, default_path)
 
         if default_config:
             config.update(
@@ -283,6 +351,7 @@ def unpack_profiles(config, config_path, profiles_keyword):
                 for key, value in default_config.items()
                 if key not in config
             )
+    
     del config[profiles_keyword]
 
 def unpack_single_profile():
@@ -364,8 +433,7 @@ def parse_initial_args(arg_parser: argparse.ArgumentParser,
                             profiles_keyword: str = BASE_PROFILES_KEYWORD) -> Tuple[str, List[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
-    return the path of that config, any profiles information and the remaining arguments. Otherwise, return None
-    and the remaining arguments.
+    return the path of that config, any profiles information, and the used keywords. Otherwise, return None
 
     Args:
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
@@ -377,20 +445,20 @@ def parse_initial_args(arg_parser: argparse.ArgumentParser,
         str: A string of the path to the alternate config.
         str: The specified profile
         List[str]: A list of the profile specifiers.
-        List[str]: All remaining arguments.
+        List[str]: The argument names used by the initial args that should be ignored at later steps
     """
 
-    arg_parser.add_argument(f"profile", default=None, type=str)
-    arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
-    arg_parser.add_argument(f"--{profiles_keyword}", nargs="*", default=[], type=str)
+    arg_parser.add_argument("_main_profile", metavar="profile", type=str, nargs="?", default=None)
+    arg_parser.add_argument(f"--{config_argument_keyword}", dest="_alt_config_name", default=None, type=str)
+    arg_parser.add_argument(f"--{profiles_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
 
-    known_args, unknown_args = arg_parser.parse_known_args()
+    known_args, _ = arg_parser.parse_known_args()
     
-    profile = known_args.profile
-    profile_specifiers = vars(known_args)[profiles_keyword]
+    profile = known_args._main_profile
+    profile_specifiers = known_args._profile_specifiers
     
-    config_path = vars(known_args)[config_argument_keyword]
-    return config_path, profile, profile_specifiers, unknown_args
+    config_path = known_args._alt_config_name
+    return config_path, profile, profile_specifiers, ["_main_profile", "_alt_config_name", "_profile_specifiers"]
 
 
 def config_to_nested_config(config: Config) -> Config:
