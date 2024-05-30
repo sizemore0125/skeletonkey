@@ -1,0 +1,2 @@
+dataset:
+  _target_: datasets.debug_dataset

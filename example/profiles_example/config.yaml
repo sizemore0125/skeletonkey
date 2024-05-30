@@ -1,0 +1,15 @@
+profiles:
+  
+  ~train:
+    default: defaults/train.yaml
+    model:
+      head: models/train/head.yaml
+      backbone: models/train/backbone.yaml
+    dataset: datasets/train_dataset.yaml
+  
+  debug:
+    default: defaults/debug.yaml
+    model:
+      head: models/debug/head.yaml
+      backbone: models/debug/backbone.yaml
+    dataset: datasets/debug_dataset.yaml
