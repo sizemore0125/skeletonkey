@@ -464,7 +464,7 @@ def parse_initial_args(arg_parser: argparse.ArgumentParser,
     profile = known_args._main_profile
     profile_specifiers = known_args._profile_specifiers
     
-    if "." not in profile_specifiers[0]:
+    if len(profile_specifiers) > 0 and "." not in profile_specifiers[0]:
         if profile is not None:
             raise ValueError(f"Cannot specify profile in two places: {profile} vs. {profile_specifiers[0]}")
         profile = profile_specifiers[0]
