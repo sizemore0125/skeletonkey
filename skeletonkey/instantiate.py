@@ -24,7 +24,7 @@ def import_target(class_string: str) -> Type[Any]:
     return obj
 
 
-def partial_instantiate(config, target_keyword=TARGET_KEYWORD,_instantiate_recursive=True, **kwargs) -> Any:
+def instantiate_partial(config, target_keyword=TARGET_KEYWORD,_instantiate_recursive=True, **kwargs) -> Any:
     """
     Instantiate a functools.partial object using a Config object. The Config
     object should contain the key "_target_" to specify the class to instantiate.
@@ -49,7 +49,7 @@ def partial_instantiate(config, target_keyword=TARGET_KEYWORD,_instantiate_recur
     if _instantiate_recursive:
         for k, v in obj_kwargs.items():
             if isinstance(v, type(config)) and (target_keyword in vars(v)):
-                obj_kwargs[k] = partial_instantiate(v)
+                obj_kwargs[k] = instantiate_partial(v)
 
     obj_kwargs.update(kwargs)
 
