@@ -24,7 +24,46 @@ def import_target(class_string: str) -> Type[Any]:
     return obj
 
 
-def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, partial=False, **kwargs) -> Any:
+def partial_instantiate(config, target_keyword=TARGET_KEYWORD,_instantiate_recursive=True, **kwargs) -> Any:
+    """
+    Instantiate a functools.partial object using a Config object. The Config
+    object should contain the key "_target_" to specify the class to instantiate.
+
+    You need to call the partial object with the remaining parameters to
+    fully instantiate.
+
+    example usgage can be found in example/partial_instantiate_example/
+
+    Args:
+        config (Config): A Config object containing the key "_target_"
+            to specify the class, along with any additional keyword
+            arguments for the class.
+
+    Returns:
+        Any: An instance of functools.partial of the specified class.
+    """
+    obj_kwargs = vars(config).copy()
+    class_obj = import_target(obj_kwargs[target_keyword])
+    del obj_kwargs[target_keyword]
+
+    if _instantiate_recursive:
+        for k, v in obj_kwargs.items():
+            if isinstance(v, type(config)) and (target_keyword in vars(v)):
+                obj_kwargs[k] = partial_instantiate(v)
+
+    obj_kwargs.update(kwargs)
+
+    obj_parameters = inspect.signature(class_obj).parameters
+    required_parameters = [
+        param_name for param_name, param in obj_parameters.items()
+        if param.default == param.empty and param.kind != inspect.Parameter.VAR_KEYWORD
+    ]
+    valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
+    return functools.partial(class_obj, **valid_parameters)
+
+
+
+def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, **kwargs) -> Any:
     """
     Instantiate a class object using a Config object.
     The Config object should contain the key "_target_" to
@@ -60,15 +99,12 @@ def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=Tr
     valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
     missing_parameters = [k for k in required_parameters if k not in valid_parameters.keys()]
 
-    if len(missing_parameters) != 0 and not partial:
+    if len(missing_parameters) != 0:
         raise TypeError(
             f"missing {len(missing_parameters)} required positional(s) argument: {', '.join(missing_parameters)}."
             + " Add it to your config or as a keyword argument to skeletonkey.instantiate()."
         )
-    if partial:
-        partial = functools.partial(class_obj, **valid_parameters)
-        return partial
-    
+
     return class_obj(**obj_kwargs)
 
 def instantiate_all(config, target_keyword=TARGET_KEYWORD, **kwargs) -> Tuple[Any]:
