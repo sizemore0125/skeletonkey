@@ -29,9 +29,13 @@ class SuperCoolNeuralNetwork:
 @skeletonkey.unlock("config.yaml")
 def main(args):
     partial_nn = skeletonkey.instantiate(args.neural_network, partial=True)
-    print(f"Type of partial_nn: {type(partial_nn)}")
+    print(f"Type of partial_nn: {type(partial_nn)}") 
+    # >>> Type of partial_nn: <class 'functools.partial'>
+
     epic_model = partial_nn(input_size=28**2, output_size=10)
-    print(f"Type of epic_model: {type(epic_model)}")
+    print(f"Type of epic_model: {type(epic_model)}") 
+    # >>> Type of partial_nn: <class 'functools.partial'>
+
     print(epic_model)
 
     
