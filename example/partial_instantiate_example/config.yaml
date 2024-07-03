@@ -1,0 +1,5 @@
+neural_network:
+  _target_: "main.SuperCoolNeuralNetwork"
+  hidden_size: 128
+  activation: "tanh"
+  dropout: 0.2
