@@ -1,4 +1,5 @@
 import inspect
+import functools
 from typing import Type, Any, Tuple
 
 TARGET_KEYWORD: str = "_target_"
@@ -23,7 +24,7 @@ def import_target(class_string: str) -> Type[Any]:
     return obj
 
 
-def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, **kwargs) -> Any:
+def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, partial=False, **kwargs) -> Any:
     """
     Instantiate a class object using a Config object.
     The Config object should contain the key "_target_" to
@@ -59,11 +60,14 @@ def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=Tr
     valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
     missing_parameters = [k for k in required_parameters if k not in valid_parameters.keys()]
 
-    if len(missing_parameters) != 0:
+    if len(missing_parameters) != 0 and not partial:
         raise TypeError(
             f"missing {len(missing_parameters)} required positional(s) argument: {', '.join(missing_parameters)}."
             + " Add it to your config or as a keyword argument to skeletonkey.instantiate()."
         )
+    if partial:
+        partial = functools.partial(class_obj, **valid_parameters)
+        return partial
     
     return class_obj(**obj_kwargs)
 
