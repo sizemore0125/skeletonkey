@@ -17,27 +17,16 @@ BASE_PROFILES_KEYWORD: str = "profiles"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 
 class Config():
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config_dict: dict, unparsed_args: List[str]=None):
         """
-        Initializes the config from a dictionary or from kwargs.\n
-
-        Args:
-            Either a single dictionary as an arg or suply a number of kwargs.
+        Initializes the config from a dictionary.\n
         """
-
-        if (len(args) != 0) and (len(kwargs) != 0):
-            raise ValueError("Config should not receive args and kwargs at the same time.")
+        if not isinstance(config_dict, dict):
+            raise ValueError("Supplied arg must be a dictionary")
+        self._init_from_dict(config_dict)
         
-        elif not (len(args) == 0 or len(args) == 1):
-            raise ValueError("Config should not receive more than one non-keyword argument.")
+        self.__unparsed_args = unparsed_args
 
-
-        if len(args) == 1:
-            if not isinstance(args[0], dict):
-                raise ValueError("Supplied arg must be a dictionary")
-            self._init_from_dict(args[0])
-        else:
-            self._init_from_dict(kwargs)
 
     def update(self, update_config: Union[dict, 'Config']):
         """
@@ -51,6 +40,7 @@ class Config():
         if not isinstance(update_config, Config):
             update_config = config_to_nested_config(Config(update_config))
         self._update_from_config(update_config)
+        return self
 
 
     def _update_from_config(self, update_config: 'Config'):
@@ -58,8 +48,11 @@ class Config():
         Recursively place all of the values from update_config into self, overwriting them if they
         exist and adding them if they do not.        
         """
-
         for k, v in update_config.__dict__.items():
+            
+            if self.__unparsed_args is not None and k in self.__unparsed_args:
+                self.__unparsed_args.remove(k)
+
             if isinstance(v, Config):
                 if k not in self.__dict__.keys():
                     self[k] = Config({})
@@ -89,7 +82,6 @@ class Config():
     def __setitem__(self, key: str, value):
         self.__setattr__(key, value)
 
-
     def __delitem__(self, key: str):
         self.__delattr__(key)
 
@@ -98,12 +90,20 @@ class Config():
 
     def __repr__(self):
         return f"Config({self._subconfig_str(self, 1)})"
-    
-    def instantiate(self, **kwargs):
-        return instantiate(self, **kwargs)
 
     def __call__(self, **kwargs):
         return self.instantiate(**kwargs)
+    
+    def __getattr__(self, name):
+        message = f"'Config' object has no attribute '{name}'."
+        if self.__unparsed_args is not None and name in self.__unparsed_args:
+            raise AttributeError(message + f" The key '{name}' was specified from the command line," 
+                                 + " but it does not exist in the yaml config used to create this 'Config' object.")
+        else:
+            raise AttributeError(message + f" Please specify '{name}' in your config yaml.")
+    
+    def instantiate(self, **kwargs):
+        return instantiate(self, **kwargs)
 
     def _subconfig_str(self, subspace: "Config", tab_depth:int):
         """
@@ -115,15 +115,29 @@ class Config():
         """
         s = ""
         for k, v in subspace.__dict__.items():
-            s += "\n" + "  "*tab_depth + k + ": "
-            
-            if isinstance(v, Config):
-                s+= "\n"
-                s+= self._subconfig_str(v, tab_depth+1)[1:] # [1:] gets rid of uneccesary leading \n
-            else:
-                s += str(v)
+            if not k.startswith("_Config__"):
+                s += "\n" + "  "*tab_depth + k + ": "
+                
+                if isinstance(v, Config):
+                    s+= "\n"
+                    s+= self._subconfig_str(v, tab_depth+1)[1:] # [1:] gets rid of uneccesary leading \n
+                else:
+                    s += str(v)
 
         return s
+    
+    def to_dict(self) -> "Config":
+        return self._to_dict(self)
+
+    def _to_dict(self, subspace: "Config"):
+        config_dict = {}
+        for k, v in subspace.__dict__.items():
+            if not k.startswith("_Config__"):
+                if isinstance(v, Config):
+                    config_dict[k] = self._to_dict(v)
+                else:
+                    config_dict[k] = v
+        return config_dict
 
 
 def find_yaml_path(file_path: str) -> str:
@@ -224,12 +238,14 @@ def add_yaml_extension(path: str) -> str:
     return path
 
 
-def load_yaml_config(config_path: str,
-                     config_name: str,
-                     profile: str,
-                     profile_specifiers: List[str],
-                     profiles_keyword: str = BASE_PROFILES_KEYWORD,
-                     collection_keyword: str = BASE_COLLECTION_KEYWORD) -> dict:
+def load_yaml_config(
+    config_path: str,
+    config_name: str,
+    profile: str,
+    profile_specifiers: List[str],
+    profiles_keyword: str = BASE_PROFILES_KEYWORD,
+    collection_keyword: str = BASE_COLLECTION_KEYWORD
+) -> dict:
     """
     Load a YAML configuration file and update with profiles and collections.
 
@@ -253,7 +269,7 @@ def load_yaml_config(config_path: str,
     
     return config
 
-def override_profile_with_specifier(profile_dict: dict, specifier: str, config: dict):
+def override_profile_with_specifier(profile_dict: dict, specifier: str, config: dict) -> None:
     """
     Will take the section of the config indicated by the specifier and place it in the profile.
     If such a section does not exist in the profile, it will be created. If it does, it will be 
@@ -361,15 +377,13 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
     
     del config[profiles_keyword]
 
-def unpack_single_profile():
-    pass
 
-def unpack_collection(config, config_path, collection_keyword):
+def unpack_collection(config: Config, config_path: str, collection_keyword: str):
         collections_dict = config[collection_keyword]
         
         for collection_key in collections_dict.keys():
             if collection_key in config:
-                return ValueError("You cannot have a collection with the same name as an argument.")
+                raise ValueError("You cannot have a collection with the same name as an argument.")
 
             collection_entry = collections_dict[collection_key]
 
@@ -420,13 +434,13 @@ def add_args_from_dict(
                     f"--{prefix}{key}", default=value
                 )
 
-def update_flat_config_types(flat_config: Config) -> Config:
+def namespace_to_config(flat_config: argparse.Namespace) -> Config:
     """
-    Given a flat config containing some string values, parse those string values as if they were
+    Given a flat namespace containing some string values, parse those string values as if they were
     yaml arguemnts into the corresponding python type and return an updated config.
 
     Args:
-        config (Config): The flat Config whose values should be parsed
+        config (argparse.Namespace): The flat Config whose values should be parsed
     """
     return Config({
         key: yaml.safe_load(value) if isinstance(value, str) else value
@@ -435,9 +449,11 @@ def update_flat_config_types(flat_config: Config) -> Config:
         
 
 
-def parse_initial_args(arg_parser: argparse.ArgumentParser,
-                            config_argument_keyword: str="config", 
-                            profiles_keyword: str = BASE_PROFILES_KEYWORD) -> Tuple[str, List[str]]:
+def parse_initial_args(
+        arg_parser: argparse.ArgumentParser,
+        config_argument_keyword: str="config", 
+        profiles_keyword: str = BASE_PROFILES_KEYWORD
+) -> Tuple[str, List[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
     return the path of that config, any profiles information, and the used keywords. Otherwise, return None
@@ -474,7 +490,7 @@ def parse_initial_args(arg_parser: argparse.ArgumentParser,
     return config_path, profile, profile_specifiers, ["_main_profile", "_alt_config_name", "_profile_specifiers"]
 
 
-def config_to_nested_config(config: Config) -> Config:
+def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Config:
     """
     Convert an Config object with 'key1.keyn' formatted keys into a nested Config object.
 
@@ -483,6 +499,7 @@ def config_to_nested_config(config: Config) -> Config:
 
     Returns:
         Config: A nested Config representation of the input Config object.
+        unparsed_args (List[str]): Arguments passed from the command line not specified in the yaml config. 
     """
     nested_dict = {}
     for key, value in vars(config).items():
@@ -494,4 +511,4 @@ def config_to_nested_config(config: Config) -> Config:
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return Config(nested_dict)
+    return Config(nested_dict, unparsed_args)
