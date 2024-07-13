@@ -1,0 +1,4 @@
+epochs: 256
+eval:
+  metric: rscore
+  logging_path: /path/for/logging

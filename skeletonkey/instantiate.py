@@ -42,13 +42,17 @@ def instantiate_partial(config, target_keyword=TARGET_KEYWORD,_instantiate_recur
     Returns:
         Any: An instance of functools.partial of the specified class.
     """
-    obj_kwargs = vars(config).copy()
+    if not isinstance(config, dict):
+        obj_kwargs = config.to_dict().copy()
+    else: 
+        obj_kwargs = config.copy()
+
     class_obj = import_target(obj_kwargs[target_keyword])
     del obj_kwargs[target_keyword]
 
     if _instantiate_recursive:
         for k, v in obj_kwargs.items():
-            if isinstance(v, type(config)) and (target_keyword in vars(v)):
+            if isinstance(v, dict) and (target_keyword in v):
                 obj_kwargs[k] = instantiate_partial(v)
 
     obj_kwargs.update(kwargs)
@@ -80,13 +84,17 @@ def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=Tr
     Raises:
         TypeError: If the class is missing specific parameters.
     """
-    obj_kwargs = vars(config).copy()
+    if not isinstance(config, dict):
+        obj_kwargs = config.to_dict().copy()
+    else: 
+        obj_kwargs = config.copy()
+
     class_obj = import_target(obj_kwargs[target_keyword])
     del obj_kwargs[target_keyword]
 
     if _instantiate_recursive:
         for k, v in obj_kwargs.items():
-            if isinstance(v, type(config)) and (target_keyword in vars(v)):
+            if isinstance(v, dict) and (target_keyword in v):
                 obj_kwargs[k] = instantiate(v)
 
     obj_kwargs.update(kwargs)
@@ -152,7 +160,7 @@ def fetch(config, target_keyword=TARGET_KEYWORD):
         Any: The value associated with the specified "_target_".
     """
 
-    obj_kwargs = vars(config).copy()
+    obj_kwargs = config.to_dict().copy()
     obj = import_target(obj_kwargs[target_keyword])
 
     return obj

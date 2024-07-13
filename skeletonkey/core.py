@@ -3,15 +3,16 @@ import functools
 import os
 import sys
 from typing import Callable, Optional
+import warnings
 
 from .config import (
     parse_initial_args,
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
-    update_flat_config_types,
+    namespace_to_config,
     config_to_nested_config,
-    Config
+    Config,
 )
 
 
@@ -70,7 +71,15 @@ def unlock(config_name: Optional[str] = None, config_dir: Optional[str] = None) 
     if config_dir_command_line is not None:
         config_name = os.path.abspath(config_dir_command_line)
         config_dir = None
-    elif config_name is not None:
+
+        # If they have more than one unlock, warn user than the command-line config will
+        # overwrite all the configs for all unlocks.
+        if hasattr(unlock, "_command_line_unlock"):
+            warnings.warn("Multiple @unlock decorators are present. The command line configurations will be used for all @unlock calls.")
+        else:
+            setattr(unlock, "_command_line_unlock", True)
+
+    if config_name is not None:
         config_dir = get_config_dir_path(os.path.dirname(config_name))
     else: 
         raise ValueError("config path is neither specified in 'unlock' nor via the command line.")
@@ -79,18 +88,22 @@ def unlock(config_name: Optional[str] = None, config_dir: Optional[str] = None) 
     # Create decorator
     def _parse_config(main: Callable):
         @functools.wraps(main)
-        def _inner_function():
-            config = load_yaml_config(config_dir, config_name, profile, profile_specifiers)
+        def _inner_function(config: Config=None):
+            config_dict = load_yaml_config(config_dir, config_name, profile, profile_specifiers)
 
-            add_args_from_dict(parser, config)
+            add_args_from_dict(parser, config_dict)
 
-            args = parser.parse_args()
-            args = update_flat_config_types(args)
+            args, unparsed_args = parser.parse_known_args()
+            unparsed_args = [arg.strip("--") for arg in unparsed_args]
+            args = namespace_to_config(args)
 
             for temp_arg in temp_args:
                 del args[temp_arg]
 
-            args = config_to_nested_config(args)
+            args = config_to_nested_config(args, unparsed_args)
+            
+            if config is not None:
+                args.update(config)
 
             return main(args)
 
