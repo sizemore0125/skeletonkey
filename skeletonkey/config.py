@@ -123,7 +123,7 @@ class Config():
 
         return s
     
-    def to_dict(self) -> "Config":
+    def to_dict(self) -> dict:
         return self._to_dict(self)
 
     def _to_dict(self, subspace: "Config"):
