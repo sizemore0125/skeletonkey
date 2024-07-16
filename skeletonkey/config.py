@@ -13,9 +13,6 @@ from typing import List, Tuple, Union
 
 from .instantiate import instantiate
 
-BASE_PROFILES_KEYWORD: str = "profiles"
-BASE_COLLECTION_KEYWORD: str = "keyring"
-
 class Config():
     def __init__(self, config_dict: dict, unparsed_args: List[str]=None):
         """
@@ -243,8 +240,8 @@ def load_yaml_config(
     config_name: str,
     profile: str,
     profile_specifiers: List[str],
-    profiles_keyword: str = BASE_PROFILES_KEYWORD,
-    collection_keyword: str = BASE_COLLECTION_KEYWORD
+    profiles_keyword: str,
+    collection_keyword: str,
 ) -> dict:
     """
     Load a YAML configuration file and update with profiles and collections.
@@ -446,13 +443,12 @@ def namespace_to_config(flat_config: argparse.Namespace) -> Config:
         key: yaml.safe_load(value) if isinstance(value, str) else value
         for key, value in vars(flat_config).items()
     })
-        
 
 
 def parse_initial_args(
-        arg_parser: argparse.ArgumentParser,
-        config_argument_keyword: str="config", 
-        profiles_keyword: str = BASE_PROFILES_KEYWORD
+    arg_parser: argparse.ArgumentParser,
+    config_argument_keyword: str, 
+    profiles_keyword: str,
 ) -> Tuple[str, List[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
@@ -471,23 +467,20 @@ def parse_initial_args(
         List[str]: The argument names used by the initial args that should be ignored at later steps
     """
 
-    arg_parser.add_argument("_main_profile", metavar="profile", type=str, nargs="?", default=None)
-    arg_parser.add_argument(f"--{config_argument_keyword}", dest="_alt_config_name", default=None, type=str)
+    arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
     arg_parser.add_argument(f"--{profiles_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
 
     known_args, _ = arg_parser.parse_known_args()
     
-    profile = known_args._main_profile
     profile_specifiers = known_args._profile_specifiers
     
+    profile=None
     if len(profile_specifiers) > 0 and "." not in profile_specifiers[0]:
-        if profile is not None:
-            raise ValueError(f"Cannot specify profile in two places: {profile} vs. {profile_specifiers[0]}")
         profile = profile_specifiers[0]
         del profile_specifiers[0]
 
-    config_path = known_args._alt_config_name
-    return config_path, profile, profile_specifiers, ["_main_profile", "_alt_config_name", "_profile_specifiers"]
+    config_path = getattr(known_args, config_argument_keyword)
+    return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
 
 
 def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Config:
