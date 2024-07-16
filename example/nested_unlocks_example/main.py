@@ -11,7 +11,7 @@ class MyModel:
 
 # Note: The last decorator applied (config1) will overwriute any matching keys in any previous configs (config2).
 @skeletonkey.unlock("config1.yaml")
-@skeletonkey.unlock("config2.yaml")
+@skeletonkey.unlock("config2.yaml", config_argument_keyword="config2", prefix="eval")
 def main(args):
     print(args)
     model = skeletonkey.instantiate(args.model)

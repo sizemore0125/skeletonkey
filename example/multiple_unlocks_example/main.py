@@ -9,14 +9,14 @@ class MyModel:
         self.layer_size = layer_size
         self.activation = activation
 
-@skeletonkey.unlock("config2.yaml")
+@skeletonkey.unlock("config2.yaml", config_argument_keyword="config2")
 def evaluate(args):
     print(args)
     print("Metric: ", args.eval.metric)
     print("Logging Path: ", args.eval.logging_path)
     # Note: All the args from main are inaccessable from this args object and vice versa. 
 
-@skeletonkey.unlock("config1.yaml")
+@skeletonkey.unlock("config1.yaml", config_argument_keyword="config1")
 def main(args):
     print(args)
     model = skeletonkey.instantiate(args.model)
