@@ -1,5 +1,5 @@
 # Adds the local skeletonkey source code to path, so that version is imported
-import os, sys
+import os, sys, pprint
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 
 import skeletonkey
@@ -25,6 +25,8 @@ def main(args):
     print("Model activation: ", model.activation)
     print("Number of Epochs: ", args.epochs)
     print("Debug Flag: ", args.debug)   
+
+    pprint.pp(args.to_dict())
 
 if __name__ == "__main__":  
     main()
