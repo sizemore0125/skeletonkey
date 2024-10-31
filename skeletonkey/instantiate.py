@@ -2,7 +2,7 @@ import inspect
 import functools
 
 from .config import Config
-from typing import Type, Any, Tuple, Iterable
+from typing import Type, Any, Tuple, Iterable, Callable
 
 INSTANCE_KEYWORD: str = "_instance_"
 PARTIAL_KEYWORD: str = "_partial_"
@@ -34,6 +34,28 @@ def instantiate(*configs:Iterable[Config],
                 fetch_keyword:str=FETCH_KEYWORD,
                 _instantiate_recursive:bool=True,
                 **kwargs) -> Any:
+
+    """
+    Instantiate a class object using a Config object.
+    The Config object should contain the key "_target_" to
+    specify the class to instantiate.
+
+    Args:
+        *configs (Config): A Config object containing the class to instantiate. Multiple Config objects can be provided.
+        instance_keyword (str, optional): The keyword to use to specify a full class instantiation. Defaults to "_instance_".
+        partial_keyword (str, optional): The keyword to use to specify a partial class instantiation. Defaults to "_partial_".
+        fetch_keyword (str, optional): The keyword to use to specify a fetch class instantiation. Defaults to "_fetch_".
+        _instantiate_recursive (bool, optional): Whether to recursively instantiate subconfigs. Defaults to True.
+        **kwargs: Additional keyword arguments to pass to the class constructor
+
+    Returns:
+        Any: The instantiated class object (or list of objects if multiple configs are provided)
+
+    Raises:
+        ValueError: If no valid instantiation keyword is found in the config.
+        TypeError: If any required parameters are missing from the instacne config
+        ValueError: If a config instantiated with the _fetch_ keyword has additional arguments.
+    """
     
     if len(configs) == 1:
         return _instantiate_single(configs[0], instance_keyword, partial_keyword, fetch_keyword, _instantiate_recursive, **kwargs)
@@ -86,11 +108,35 @@ def _instantiate_single(config: Config,
             error_str += 'Hint: the "_target_" keyword has been deprecated. Use "_instance_", "_partial_", or "_fetch_" instead.'
         raise ValueError(error_str)
 
-def _is_instantiatable(value, instance_keyword=INSTANCE_KEYWORD, partial_keyword=PARTIAL_KEYWORD, fetch_keyword=FETCH_KEYWORD) -> bool:
+def _is_instantiatable(value: Any, instance_keyword=INSTANCE_KEYWORD, partial_keyword=PARTIAL_KEYWORD, fetch_keyword=FETCH_KEYWORD) -> bool:
+    """
+    Check if a given value can be instantiated.
+
+    Args:
+        value: The value to check.
+        instance_keyword (str, optional): The keyword to use to specify a full class instantiation. Defaults to "_instance_".
+        partial_keyword (str, optional): The keyword to use to specify a partial class instantiation. Defaults to "_partial_".
+        fetch_keyword (str, optional): The keyword to use to specify a fetch class instantiation. Defaults to "_fetch_".
+    Returns:
+        bool: True if the value can be instantiated, False otherwise.
+    """
+
     return isinstance(value, dict) and any(keyword in value for keyword in [instance_keyword, partial_keyword, fetch_keyword])
 
 
-def _instance(target, kwargs, config):
+def _instance(target: Callable, kwargs: dict, config: Config) -> Any:
+    """
+    Create an instance of a class target with the given keyword arguments, checking for missing parameters.
+
+    Args:
+        target: The class to instantiate.
+        kwargs: The keyword arguments to pass to the class constructor
+        config: The original config object, used for error messages.
+    
+    Returns:
+        Any: The instantiated class object.
+    """
+
    # Check for missing parameters 
     obj_parameters = inspect.signature(target).parameters
     required_parameters = [
@@ -109,11 +155,23 @@ def _instance(target, kwargs, config):
         )
     return target(**kwargs)
 
-def _partial(target, kwargs, config):
+def _partial(target: Callable, kwargs: dict, config: Config) -> functools.partial:
+    """
+    Create a partial instantiation of a class target with the given keyword arguments.
+
+    Args:
+        target: The class to partially instantiate.
+        kwargs: The keyword arguments to pass to the class constructor  
+        config: The original config object, used for error messages.
+
+    Returns:
+
+    """
+        
     return functools.partial(target, **kwargs)
 
 
-def _fetch(target, kwargs, config):
+def _fetch(target: Any, kwargs: dict, config: Config) -> Any:
     if kwargs != {}:
         raise ValueError(f"Error in config: {config}. Configs instantiated with the _fetch_ keyword cannot have any additional arguments.")
     
