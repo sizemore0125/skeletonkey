@@ -1,12 +1,16 @@
 import inspect
 import functools
-from typing import Type, Any, Tuple
 
-TARGET_KEYWORD: str = "_target_"
+from .config import Config
+from typing import Type, Any, Tuple, Iterable
+
+INSTANCE_KEYWORD: str = "_instance_"
+PARTIAL_KEYWORD: str = "_partial_"
+FETCH_KEYWORD: str = "_fetch_"
 
 def import_target(class_string: str) -> Type[Any]:
     """
-    Dynamically import a class using its full module path and class name.
+    Dynamically import a class/function using its full module path and name.
 
     Args:
         class_string (str): A string representing the full path to the class,
@@ -24,143 +28,93 @@ def import_target(class_string: str) -> Type[Any]:
     return obj
 
 
-def instantiate_partial(config, target_keyword=TARGET_KEYWORD,_instantiate_recursive=True, **kwargs) -> Any:
-    """
-    Instantiate a functools.partial object using a Config object. The Config
-    object should contain the key "_target_" to specify the class to instantiate.
+def instantiate(*configs:Iterable[Config], 
+                instance_keyword:str=INSTANCE_KEYWORD,
+                partial_keyword:str=PARTIAL_KEYWORD,
+                fetch_keyword:str=FETCH_KEYWORD,
+                _instantiate_recursive:bool=True,
+                **kwargs) -> Any:
+    
+    if len(configs) == 1:
+        return _instantiate_single(configs[0], instance_keyword, partial_keyword, fetch_keyword, _instantiate_recursive, **kwargs)
+    
+    else:
+        return [_instantiate_single(config, instance_keyword, partial_keyword, fetch_keyword, _instantiate_recursive, **kwargs)
+                for config in configs]
+            
 
-    You need to call the partial object with the remaining parameters to
-    fully instantiate.
-
-    example usgage can be found in example/partial_instantiate_example/
-
-    Args:
-        config (Config): A Config object containing the key "_target_"
-            to specify the class, along with any additional keyword
-            arguments for the class.
-
-    Returns:
-        Any: An instance of functools.partial of the specified class.
-    """
+def _instantiate_single(config: Config,
+                        instance_keyword:str=INSTANCE_KEYWORD,
+                        partial_keyword:str=PARTIAL_KEYWORD,
+                        fetch_keyword:str=FETCH_KEYWORD,
+                        _instantiate_recursive:bool=True,
+                        **extra_kwargs) -> Any:
+    
     if not isinstance(config, dict):
-        obj_kwargs = config.to_dict().copy()
-    else: 
-        obj_kwargs = config.copy()
+        kwargs:dict = config.to_dict().copy()
+    else:
+        kwargs:dict = config.copy()
 
-    class_obj = import_target(obj_kwargs[target_keyword])
-    del obj_kwargs[target_keyword]
-
+    # Recursively instantiate subconfigs
     if _instantiate_recursive:
-        for k, v in obj_kwargs.items():
-            if isinstance(v, dict) and (target_keyword in v):
-                obj_kwargs[k] = instantiate_partial(v)
+        for k, v in kwargs.items():
+            if _is_instantiatable(v, instance_keyword, partial_keyword, fetch_keyword):
+                kwargs[k] = _instantiate_single(v)
+    kwargs.update(extra_kwargs)
 
-    obj_kwargs.update(kwargs)
+    if instance_keyword in kwargs:
+        target = import_target(kwargs[instance_keyword])
+        del kwargs[instance_keyword]
+        
+        return _instance(target, kwargs, config)
+    
+    elif partial_keyword in kwargs:
+        target = import_target(kwargs[partial_keyword])
+        del kwargs[partial_keyword]
 
-    obj_parameters = inspect.signature(class_obj).parameters
+        return _partial(target, kwargs, config)
+    
+    elif fetch_keyword in kwargs:
+        target = import_target(kwargs[fetch_keyword])
+        del kwargs[fetch_keyword]
+
+        return _fetch(target, kwargs, config)
+    
+    else:
+        error_str = f"No valid instantiation keyword found in config: {config}\n"
+        if "_target_" in kwargs:
+            error_str += 'Hint: the "_target_" keyword has been deprecated. Use "_instance_", "_partial_", or "_fetch_" instead.'
+        raise ValueError(error_str)
+
+def _is_instantiatable(value, instance_keyword=INSTANCE_KEYWORD, partial_keyword=PARTIAL_KEYWORD, fetch_keyword=FETCH_KEYWORD) -> bool:
+    return isinstance(value, dict) and any(keyword in value for keyword in [instance_keyword, partial_keyword, fetch_keyword])
+
+
+def _instance(target, kwargs, config):
+   # Check for missing parameters 
+    obj_parameters = inspect.signature(target).parameters
     required_parameters = [
         param_name for param_name, param in obj_parameters.items()
         if param.default == param.empty and param.kind != inspect.Parameter.VAR_KEYWORD
     ]
-    valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
-    return functools.partial(class_obj, **valid_parameters)
 
-
-
-def instantiate(config, target_keyword=TARGET_KEYWORD, _instantiate_recursive=True, **kwargs) -> Any:
-    """
-    Instantiate a class object using a Config object.
-    The Config object should contain the key "_target_" to
-    specify the class to instantiate.
-
-    Args:
-        config (Config): A Config object containing the key "_target_"
-            to specify the class, along with any additional keyword
-            arguments for the class.
-
-    Returns:
-        Any: An instance of the specified class.
-
-    Raises:
-        TypeError: If the class is missing specific parameters.
-    """
-    if not isinstance(config, dict):
-        obj_kwargs = config.to_dict().copy()
-    else: 
-        obj_kwargs = config.copy()
-
-    class_obj = import_target(obj_kwargs[target_keyword])
-    del obj_kwargs[target_keyword]
-
-    if _instantiate_recursive:
-        for k, v in obj_kwargs.items():
-            if isinstance(v, dict) and (target_keyword in v):
-                obj_kwargs[k] = instantiate(v)
-
-    obj_kwargs.update(kwargs)
-
-    obj_parameters = inspect.signature(class_obj).parameters
-    required_parameters = [
-        param_name for param_name, param in obj_parameters.items()
-        if param.default == param.empty and param.kind != inspect.Parameter.VAR_KEYWORD
-    ]
-    valid_parameters = {k: v for k, v in obj_kwargs.items() if k in required_parameters}
+    valid_parameters = {k: v for k, v in kwargs.items() if k in required_parameters}
     missing_parameters = [k for k in required_parameters if k not in valid_parameters.keys()]
 
     if len(missing_parameters) != 0:
         raise TypeError(
-            f"missing {len(missing_parameters)} required positional(s) argument: {', '.join(missing_parameters)}."
-            + " Add it to your config or as a keyword argument to skeletonkey.instantiate()."
+              f"Error in config: {config}. "
+            + f"Missing {len(missing_parameters)} required positional argument(s): {', '.join(missing_parameters)}. "
+            + "Add it to your config or provide as a keyword argument during instantiation."
         )
+    return target(**kwargs)
 
-    return class_obj(**obj_kwargs)
+def _partial(target, kwargs, config):
+    return functools.partial(target, **kwargs)
 
-def instantiate_all(config, target_keyword=TARGET_KEYWORD, **kwargs) -> Tuple[Any]:
-    """
-    Instantiate a tuple of class objects using a Config object.
-    The Config object should contain other Config objects where the key 
-    "_target_" is at the top level, which specifies the class to instantiate.
 
-    Args:
-        config (Config): A Config object containing the key "_target_"
-            to specify the class , along with any additional keyword arguments for the class.
-
-    Returns:
-        Tuple[Any]: An tuple of instances of the specified class.
-
-    Raises:
-        ValueError: If any subconfig does not have "_target_" key.
-    """
-    collection_dict = vars(config).copy()
-
-    objects = []
-
-    for obj_key in collection_dict.keys():
-        obj_namespace = collection_dict[obj_key]
-
-        if not hasattr(obj_namespace, target_keyword):
-            raise ValueError(f"subconfig ({obj_key}) in collection does not have '_target_' key at the top level.")
-        
-        obj = instantiate(obj_namespace, **kwargs)
-        objects.append(obj)
+def _fetch(target, kwargs, config):
+    if kwargs != {}:
+        raise ValueError(f"Error in config: {config}. Configs instantiated with the _fetch_ keyword cannot have any additional arguments.")
     
-    return tuple(objects)
-
-def fetch(config, target_keyword=TARGET_KEYWORD):
-    """
-    Fetch a value from a python module based on the "_target_" key.
-    Like instantiate but does not call/instantiate the target.
-    Mainly intended to retrieve functions/
-
-    Args:
-        config (Config): A Config object containing the key "_target_"
-            to specify the object
-
-    Returns:
-        Any: The value associated with the specified "_target_".
-    """
-
-    obj_kwargs = config.to_dict().copy()
-    obj = import_target(obj_kwargs[target_keyword])
-
-    return obj
+    return target
