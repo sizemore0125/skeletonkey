@@ -11,7 +11,7 @@ the dynamic loading of classes and their arguments at runtime.
 __version__ = "0.0.11"
 
 from .core import unlock, Config
-from .instantiate import instantiate, instantiate_all, fetch, instantiate_partial
+from .instantiate import instantiate
 
 # Names to import with wildcard import
-__all__ = ["unlock", "instantiate", "instantiate_all", "fetch", "Config", "instantiate_partial"]
+__all__ = ["unlock", "instantiate", "Config"]
