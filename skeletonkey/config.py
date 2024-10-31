@@ -11,8 +11,6 @@ import argparse
 import os
 from typing import List, Tuple, Union
 
-from .instantiate import instantiate
-
 class Config():
     def __init__(self, config_dict: dict, unparsed_args: List[str]=None):
         """
@@ -100,6 +98,7 @@ class Config():
             raise AttributeError(message + f" Please specify '{name}' in your config yaml.")
     
     def instantiate(self, **kwargs):
+        from .instantiate import instantiate
         return instantiate(self, **kwargs)
 
     def _subconfig_str(self, subspace: "Config", tab_depth:int):
