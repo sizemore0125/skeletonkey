@@ -13,7 +13,7 @@ def func2():
 
 @skeletonkey.unlock("config.yaml")
 def main(args):
-    func = skeletonkey.fetch(args.func)
+    func = skeletonkey.instantiate(args.func)
 
     func()
 

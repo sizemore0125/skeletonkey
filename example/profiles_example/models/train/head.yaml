@@ -1,2 +1,2 @@
 head_model:
-  _target_: models.head
+  _instance_: models.head

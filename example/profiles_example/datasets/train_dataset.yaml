@@ -1,2 +1,2 @@
 dataset:
-  _target_: datasets.dataset
+  _instance_: datasets.dataset

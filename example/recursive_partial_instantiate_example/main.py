@@ -43,7 +43,7 @@ class SuperCoolNeuralNetwork:
 
 @skeletonkey.unlock("config.yaml")
 def main(config):
-    partial_nn = skeletonkey.instantiate_partial(config.neural_network)
+    partial_nn = skeletonkey.instantiate(config.neural_network)
     print(f"Type of partial_nn: {type(partial_nn)}")
     # >>> Type of partial_nn: <class 'functools.partial'>
 

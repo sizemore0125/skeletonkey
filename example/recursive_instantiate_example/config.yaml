@@ -1,0 +1,11 @@
+a_obj:
+  _instance_: "main.A"
+  arg: 10
+  b_obj:
+    _instance_: "main.B"
+    arg: 20
+    c_obj1:
+      _instance_: "main.C"
+      arg: 30
+    c_class:
+      _fetch_: "main.C"
