@@ -6,6 +6,7 @@ from typing import Callable, Optional
 import warnings
 
 from .config import (
+    interpolate_config,
     parse_initial_args,
     load_yaml_config,
     add_args_from_dict,
@@ -130,6 +131,8 @@ def unlock(
                 del args[temp_arg]
 
             args = dict_to_nested_dict(args)
+            
+            interpolate_config(args)
 
             args = Config(args, unparsed_args)
             if config is not None:
