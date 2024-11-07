@@ -9,7 +9,7 @@ files and enables the dynamic loading of classes and their arguments at runtime.
 import yaml
 import argparse
 import os
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any
 
 class Config():
     def __init__(self, config_dict: dict, unparsed_args: List[str]=None):
@@ -262,7 +262,7 @@ def load_yaml_config(
     if collection_keyword in config:
         unpack_collection(config, config_path, collection_keyword)
 
-    
+
     return config
 
 def override_profile_with_specifier(profile_dict: dict, specifier: str, config: dict) -> None:
@@ -395,6 +395,65 @@ def unpack_collection(config: Config, config_path: str, collection_keyword: str)
                 config[collection_key] = subconfig
 
         del config[collection_keyword]
+
+
+def interpolate_config(config, root_config = None):
+    """
+    Recursively search through a config and replace any string values enclosed in a dollar sign
+    and brackets. For example: ${key.in.config}.
+    
+    The string value will be treated as a dot notation reference to another value in the config.
+    That value will be extracted and placed in the original string's location, modifying the config
+    in place.
+    
+    If that value is not found, a ValueError will be raised.
+
+    Args:
+        config (any): The sub-config to be searched for interpolations. This can be any yaml value,
+            but it will be ignored if it is not a dictionary or list.
+        root_config (dict): The root config where any referenced values are extracted from by the
+            interpolation. If not specified, the root config is assumed to be the config itself.
+
+    """
+
+    if root_config is None:
+        root_config = config
+
+    if isinstance(config, dict):   
+        items = config.items()
+    elif isinstance(config, list):
+        items = enumerate(config)
+    else:
+        return
+    
+    for key, value in items:
+        if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            config[key] = _interpolate_value(value[2:-1], root_config)
+        else:
+            interpolate_config(value, root_config)
+            
+
+
+def _interpolate_value(reference, root_config) -> Any:
+    """
+    Given a config key in dot notation, extract the reference to another value in the config and return that value.
+    
+    Args:
+        reference (str): The dot notation reference to another value in the config.
+        root_config (dict): The root config where the referenced value is extracted from.
+
+    Returns:
+        any: The value indicated by the dot notation reference.
+    """
+
+    keys = reference.split(".")
+    current_dict = root_config
+    for key in keys:    
+        if key not in current_dict.keys():
+            breakpoint()
+            raise ValueError(f"Error while interpolating: {reference} is not a valid reference to a config value.")
+        current_dict = current_dict[key]
+    return current_dict
 
 
 def add_args_from_dict(
