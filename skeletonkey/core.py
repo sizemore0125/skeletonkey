@@ -6,12 +6,13 @@ from typing import Callable, Optional
 import warnings
 
 from .config import (
+    interpolate_config,
     parse_initial_args,
     load_yaml_config,
     add_args_from_dict,
     add_yaml_extension,
-    namespace_to_config,
-    config_to_nested_config,
+    flat_namespace_to_dict,
+    dict_to_nested_dict,
     Config,
 )
 
@@ -124,13 +125,16 @@ def unlock(
 
             args, unparsed_args = parser.parse_known_args()
             unparsed_args = [arg.strip("--") for arg in unparsed_args]
-            args = namespace_to_config(args)
+            args = flat_namespace_to_dict(args)
 
             for temp_arg in temp_args:
                 del args[temp_arg]
 
-            args = config_to_nested_config(args, unparsed_args)
+            args = dict_to_nested_dict(args)
             
+            interpolate_config(args)
+
+            args = Config(args, unparsed_args)
             if config is not None:
                 args.update(config)
 

@@ -1,0 +1,9 @@
+model:
+  _instance_: main.MyModel
+  activation: relu
+  debug: False
+
+dataloader:
+  _instance_: main.MyDataLoader
+  batch_size: 32
+  debug: ${model.debug}

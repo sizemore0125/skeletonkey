@@ -9,7 +9,7 @@ files and enables the dynamic loading of classes and their arguments at runtime.
 import yaml
 import argparse
 import os
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any
 
 class Config():
     def __init__(self, config_dict: dict, unparsed_args: List[str]=None):
@@ -33,7 +33,7 @@ class Config():
             it is expected that the keys are in dot notation.
         """
         if not isinstance(update_config, Config):
-            update_config = config_to_nested_config(Config(update_config))
+            update_config = Config(dict_to_nested_dict(update_config))
         self._update_from_config(update_config)
         return self
 
@@ -262,7 +262,7 @@ def load_yaml_config(
     if collection_keyword in config:
         unpack_collection(config, config_path, collection_keyword)
 
-    
+
     return config
 
 def override_profile_with_specifier(profile_dict: dict, specifier: str, config: dict) -> None:
@@ -397,6 +397,65 @@ def unpack_collection(config: Config, config_path: str, collection_keyword: str)
         del config[collection_keyword]
 
 
+def interpolate_config(config, root_config = None):
+    """
+    Recursively search through a config and replace any string values enclosed in a dollar sign
+    and brackets. For example: ${key.in.config}.
+    
+    The string value will be treated as a dot notation reference to another value in the config.
+    That value will be extracted and placed in the original string's location, modifying the config
+    in place.
+    
+    If that value is not found, a ValueError will be raised.
+
+    Args:
+        config (any): The sub-config to be searched for interpolations. This can be any yaml value,
+            but it will be ignored if it is not a dictionary or list.
+        root_config (dict): The root config where any referenced values are extracted from by the
+            interpolation. If not specified, the root config is assumed to be the config itself.
+
+    """
+
+    if root_config is None:
+        root_config = config
+
+    if isinstance(config, dict):   
+        items = config.items()
+    elif isinstance(config, list):
+        items = enumerate(config)
+    else:
+        return
+    
+    for key, value in items:
+        if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            config[key] = _interpolate_value(value[2:-1], root_config)
+        else:
+            interpolate_config(value, root_config)
+            
+
+
+def _interpolate_value(reference, root_config) -> Any:
+    """
+    Given a config key in dot notation, extract the reference to another value in the config and return that value.
+    
+    Args:
+        reference (str): The dot notation reference to another value in the config.
+        root_config (dict): The root config where the referenced value is extracted from.
+
+    Returns:
+        any: The value indicated by the dot notation reference.
+    """
+
+    keys = reference.split(".")
+    current_dict = root_config
+    for key in keys:    
+        if key not in current_dict.keys():
+            breakpoint()
+            raise ValueError(f"Error while interpolating: {reference} is not a valid reference to a config value.")
+        current_dict = current_dict[key]
+    return current_dict
+
+
 def add_args_from_dict(
     arg_parser: argparse.ArgumentParser, config_dict: dict, prefix=""
 ) -> None:
@@ -430,7 +489,7 @@ def add_args_from_dict(
                     f"--{prefix}{key}", default=value
                 )
 
-def namespace_to_config(flat_config: argparse.Namespace) -> Config:
+def flat_namespace_to_dict(flat_config: argparse.Namespace) -> Config:
     """
     Given a flat namespace containing some string values, parse those string values as if they were
     yaml arguemnts into the corresponding python type and return an updated config.
@@ -438,10 +497,10 @@ def namespace_to_config(flat_config: argparse.Namespace) -> Config:
     Args:
         config (argparse.Namespace): The flat Config whose values should be parsed
     """
-    return Config({
+    return {
         key: yaml.safe_load(value) if isinstance(value, str) else value
         for key, value in vars(flat_config).items()
-    })
+    }
 
 
 def parse_initial_args(
@@ -482,19 +541,18 @@ def parse_initial_args(
     return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
 
 
-def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Config:
+def dict_to_nested_dict(config: dict) -> dict:
     """
-    Convert an Config object with 'key1.keyn' formatted keys into a nested Config object.
+    Convert a dict with 'key1.keyn' formatted keys into a nested dictionary.
 
     Args:
-        config (Config): The Config object to be converted.
+        config (dict): The Config object to be converted.
 
     Returns:
-        Config: A nested Config representation of the input Config object.
-        unparsed_args (List[str]): Arguments passed from the command line not specified in the yaml config. 
+        dict: A nested dictionarty representation of the input dictionary.
     """
     nested_dict = {}
-    for key, value in vars(config).items():
+    for key, value in config.items():
         keys = key.split(".")
         current_dict = nested_dict
         for sub_key in keys[:-1]:
@@ -503,4 +561,4 @@ def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Co
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return Config(nested_dict, unparsed_args)
+    return nested_dict
