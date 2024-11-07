@@ -28,12 +28,14 @@ def import_target(class_string: str) -> Type[Any]:
     return obj
 
 
-def instantiate(*configs:Iterable[Config], 
-                instance_keyword:str=INSTANCE_KEYWORD,
-                partial_keyword:str=PARTIAL_KEYWORD,
-                fetch_keyword:str=FETCH_KEYWORD,
-                _instantiate_recursive:bool=True,
-                **kwargs) -> Any:
+def instantiate(
+    *configs:Iterable[Config], 
+    instance_keyword:str=INSTANCE_KEYWORD,
+    partial_keyword:str=PARTIAL_KEYWORD,
+    fetch_keyword:str=FETCH_KEYWORD,
+    _instantiate_recursive:bool=True,
+    **kwargs
+) -> Any:
 
     """
     Instantiate a class object using a Config object.
@@ -65,12 +67,14 @@ def instantiate(*configs:Iterable[Config],
                 for config in configs]
             
 
-def _instantiate_single(config: Config,
-                        instance_keyword:str=INSTANCE_KEYWORD,
-                        partial_keyword:str=PARTIAL_KEYWORD,
-                        fetch_keyword:str=FETCH_KEYWORD,
-                        _instantiate_recursive:bool=True,
-                        **extra_kwargs) -> Any:
+def _instantiate_single(
+    config: Config,
+    instance_keyword:str=INSTANCE_KEYWORD,
+    partial_keyword:str=PARTIAL_KEYWORD,
+    fetch_keyword:str=FETCH_KEYWORD,
+    _instantiate_recursive:bool=True,
+    **extra_kwargs
+) -> Any:
     
     if not isinstance(config, dict):
         kwargs:dict = config.to_dict().copy()
