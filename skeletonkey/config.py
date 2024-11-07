@@ -33,7 +33,7 @@ class Config():
             it is expected that the keys are in dot notation.
         """
         if not isinstance(update_config, Config):
-            update_config = config_to_nested_config(Config(update_config))
+            update_config = Config(dict_to_nested_dict(update_config))
         self._update_from_config(update_config)
         return self
 
@@ -489,7 +489,7 @@ def add_args_from_dict(
                     f"--{prefix}{key}", default=value
                 )
 
-def namespace_to_config(flat_config: argparse.Namespace) -> Config:
+def flat_namespace_to_dict(flat_config: argparse.Namespace) -> Config:
     """
     Given a flat namespace containing some string values, parse those string values as if they were
     yaml arguemnts into the corresponding python type and return an updated config.
@@ -497,10 +497,10 @@ def namespace_to_config(flat_config: argparse.Namespace) -> Config:
     Args:
         config (argparse.Namespace): The flat Config whose values should be parsed
     """
-    return Config({
+    return {
         key: yaml.safe_load(value) if isinstance(value, str) else value
         for key, value in vars(flat_config).items()
-    })
+    }
 
 
 def parse_initial_args(
@@ -541,19 +541,18 @@ def parse_initial_args(
     return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
 
 
-def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Config:
+def dict_to_nested_dict(config: dict) -> dict:
     """
-    Convert an Config object with 'key1.keyn' formatted keys into a nested Config object.
+    Convert a dict with 'key1.keyn' formatted keys into a nested dictionary.
 
     Args:
-        config (Config): The Config object to be converted.
+        config (dict): The Config object to be converted.
 
     Returns:
-        Config: A nested Config representation of the input Config object.
-        unparsed_args (List[str]): Arguments passed from the command line not specified in the yaml config. 
+        dict: A nested dictionarty representation of the input dictionary.
     """
     nested_dict = {}
-    for key, value in vars(config).items():
+    for key, value in config.items():
         keys = key.split(".")
         current_dict = nested_dict
         for sub_key in keys[:-1]:
@@ -562,4 +561,4 @@ def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Co
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return Config(nested_dict, unparsed_args)
+    return nested_dict
