@@ -1,4 +1,4 @@
 
 func:
-  _target_: main.func1
-  # _target_: main.func2
+  _fetch_: main.func1
+  # _fetch_: main.func2

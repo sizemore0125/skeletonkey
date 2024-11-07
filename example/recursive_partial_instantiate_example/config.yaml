@@ -1,10 +1,10 @@
 neural_network:
-  _target_: "main.SuperCoolNeuralNetwork"
+  _partial_: "main.SuperCoolNeuralNetwork"
   hidden_size: 128
   activation: "tanh"
   dropout: 0.2
   encoder:
-    _target_: "main.TransformerBlock"
+    _partial_: "main.TransformerBlock"
     d_model: 21
     nhead: 18
     dim_feedforward: 18

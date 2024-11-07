@@ -45,7 +45,7 @@ To run the example above, create a config.yaml file with the following content:
 ```yaml
 epochs: 128
 model:
-  _target_: main.MyModel
+  _instance_: main.MyModel
   layer_size: 128
   activation: relu
 ```
@@ -139,7 +139,7 @@ defaults:
 
 epochs: 128
 model:
-  _target_: MyModel
+  _instance_: MyModel
   layer_size: 128
   activation: relu
 ```

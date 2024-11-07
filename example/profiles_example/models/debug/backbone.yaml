@@ -1,2 +1,2 @@
 backbone_model:
-  _target_: models.debug_backbone
+  _instance_: models.debug_backbone
