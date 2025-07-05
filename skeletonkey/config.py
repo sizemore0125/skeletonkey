@@ -9,6 +9,7 @@ files and enables the dynamic loading of classes and their arguments at runtime.
 import yaml
 import argparse
 import os
+import uuid
 from typing import List, Tuple, Union
 
 class Config():
@@ -330,7 +331,17 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
         elif profile is None:
             profile = default_profile[0]
 
-        profile_dict = config[profiles_keyword][profile]
+        # If a profile is simply a path to another config, convert it to a profile_dict.
+        profile_select = config[profiles_keyword][profile]
+        if isinstance(profile_select, dict):
+            profile_dict = profile_select
+        elif isinstance(profile_select, str):
+            profile_dict_key = str(uuid.uuid4())
+            profile_dict = {profile_dict_key: profile_select}
+        else:
+            raise ValueError(f" The value '{profile_select}' is not valid for profiles.")
+
+
         for specifier in profile_specifiers:
             override_profile_with_specifier(profile_dict, specifier, config[profiles_keyword])
 
