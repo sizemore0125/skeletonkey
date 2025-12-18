@@ -15,7 +15,8 @@ from .config import (
     Config,
 )
 
-BASE_PROFILES_KEYWORD: str = "profile"
+BASE_PROFILES_KEYWORD: str = "profiles"
+BASE_PROFILE_ARGUMENT_KEYWORD: str = "profile"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 BASE_CL_CONFIG_KEYWORD: str = "config"
 
@@ -59,6 +60,7 @@ def unlock(
     prefix: Optional[str] = None,
     config_argument_keyword: str = BASE_CL_CONFIG_KEYWORD,
     profiles_keyword: str = BASE_PROFILES_KEYWORD,
+    profile_argument_keyword: str = BASE_PROFILE_ARGUMENT_KEYWORD,
     collection_keyword: str = BASE_COLLECTION_KEYWORD,
 ) -> Callable:
     """
@@ -73,7 +75,9 @@ def unlock(
         prefix (str): Optional prefix to nest this unlock's arguments under.
         config_argument_keyword (str): Command line flag to override the config path 
             (defaults to "config").
-        profiles_keyword (str): Keyword for profile selection in the YAML/config CLI 
+        profiles_keyword (str): Keyword for profile selection in the YAML 
+            (defaults to "profiles").
+        profile_argument_keyword (str): Command line flag for selecting profiles 
             (defaults to "profile").
         collection_keyword (str): Keyword for collections in the YAML 
             (defaults to "keyring").
@@ -89,6 +93,7 @@ def unlock(
         arg_parser=parser, 
         config_argument_keyword=config_argument_keyword, 
         profiles_keyword=profiles_keyword,
+        profile_argument_keyword=profile_argument_keyword,
     )
     config_dir_command_line, profile, profile_specifiers, temp_args = initial_args
     

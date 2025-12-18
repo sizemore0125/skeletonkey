@@ -242,7 +242,7 @@ def load_yaml_config(
         config_name (str): The name of the YAML configuration file.
         profile (str): The selected profile name, if provided.
         profile_specifiers (List[str]): Additional dotted profile specifiers to merge into the selected profile.
-        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profile".
+        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
         collection_keyword (str): The keyword used to identify collections in the YAML file. Defaults to "keyring".
 
     Returns:
@@ -471,6 +471,7 @@ def parse_initial_args(
     arg_parser: argparse.ArgumentParser,
     config_argument_keyword: str, 
     profiles_keyword: str,
+    profile_argument_keyword: str,
 ) -> Tuple[Any, Any, Any, list[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
@@ -480,7 +481,8 @@ def parse_initial_args(
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
         config_argument_keyword (str): Default keyword to accept new config path from the 
             command line.
-        profiles_keyword (str): Default keyword for profiles (and the optional positional profile). Defaults to "profile".
+        profiles_keyword (str): Default keyword for profiles (YAML key). Defaults to "profiles".
+        profile_argument_keyword (str): Command line keyword for selecting profiles. Defaults to "profile".
     
     Returns:
         str: A string of the path to the alternate config.
@@ -491,7 +493,7 @@ def parse_initial_args(
 
     arg_parser.add_argument("_pos_profile_", metavar="profile", type=str, nargs="?", default=None)
     arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
-    arg_parser.add_argument(f"--{profiles_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
+    arg_parser.add_argument(f"--{profile_argument_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
 
     known_args, _ = arg_parser.parse_known_args()
     
