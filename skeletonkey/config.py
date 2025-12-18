@@ -13,15 +13,13 @@ import uuid
 from typing import List, Tuple, Union
 
 class Config():
-    def __init__(self, config_dict: dict, unparsed_args: List[str]=None):
+    def __init__(self, config_dict: dict):
         """
         Initializes the config from a dictionary.\n
         """
         if not isinstance(config_dict, dict):
             raise ValueError("Supplied arg must be a dictionary")
         self._init_from_dict(config_dict)
-        
-        self.__unparsed_args = unparsed_args
 
 
     def update(self, update_config: Union[dict, 'Config']):
@@ -45,9 +43,6 @@ class Config():
         exist and adding them if they do not.        
         """
         for k, v in update_config.__dict__.items():
-            
-            if self.__unparsed_args is not None and k in self.__unparsed_args:
-                self.__unparsed_args.remove(k)
 
             if isinstance(v, Config):
                 if k not in self.__dict__.keys():
@@ -92,11 +87,7 @@ class Config():
     
     def __getattr__(self, name):
         message = f"'Config' object has no attribute '{name}'."
-        if self.__unparsed_args is not None and name in self.__unparsed_args:
-            raise AttributeError(message + f" The key '{name}' was specified from the command line," 
-                                 + " but it does not exist in the yaml config used to create this 'Config' object.")
-        else:
-            raise AttributeError(message + f" Please specify '{name}' in your config yaml.")
+        raise AttributeError(message + f" Please specify '{name}' in your config yaml.")
     
     def instantiate(self, **kwargs):
         from .instantiate import instantiate
@@ -493,7 +484,7 @@ def parse_initial_args(
     return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
 
 
-def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Config:
+def config_to_nested_config(config: Config) -> Config:
     """
     Convert an Config object with 'key1.keyn' formatted keys into a nested Config object.
 
@@ -502,7 +493,6 @@ def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Co
 
     Returns:
         Config: A nested Config representation of the input Config object.
-        unparsed_args (List[str]): Arguments passed from the command line not specified in the yaml config. 
     """
     nested_dict = {}
     for key, value in vars(config).items():
@@ -514,4 +504,4 @@ def config_to_nested_config(config: Config, unparsed_args: List[str]=None) -> Co
             current_dict = current_dict[sub_key]
         current_dict[keys[-1]] = value
 
-    return Config(nested_dict, unparsed_args)
+    return Config(nested_dict)

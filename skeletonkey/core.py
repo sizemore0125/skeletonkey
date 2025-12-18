@@ -122,14 +122,13 @@ def unlock(
                 prefix=prefix + "." if prefix is not None else "",
             )
 
-            args, unparsed_args = parser.parse_known_args()
-            unparsed_args = [arg.strip("--") for arg in unparsed_args]
+            args = parser.parse_args()
             args = namespace_to_config(args)
 
             for temp_arg in temp_args:
                 del args[temp_arg]
 
-            args = config_to_nested_config(args, unparsed_args)
+            args = config_to_nested_config(args)
             
             if config is not None:
                 args.update(config)
