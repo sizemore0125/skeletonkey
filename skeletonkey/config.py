@@ -10,7 +10,7 @@ import yaml
 import argparse
 import os
 import uuid
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any, Dict
 
 class Config():
     def __init__(self, config_dict: dict):
@@ -240,7 +240,10 @@ def load_yaml_config(
     Args:
         config_path (str): The file path to the YAML configuration file.
         config_name (str): The name of the YAML configuration file.
+        profile (str): The selected profile name, if provided.
+        profile_specifiers (List[str]): Additional dotted profile specifiers to merge into the selected profile.
         profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
+        collection_keyword (str): The keyword used to identify collections in the YAML file. Defaults to "keyring".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -292,7 +295,7 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
 
     Args:
         config_path (str): The file path to the YAML base configuration file.
-        default_yml (str): The relative path to to the default YAML subconfiguration file.
+        default_yaml (str): The relative path to the default YAML subconfiguration file.
 
     Returns:
         dict: The updated configuration dictionary.
@@ -303,6 +306,16 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     return default_config
 
 def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: List[str], profiles_keyword: str):
+    """
+    Resolve a profiles section by selecting a profile, applying any specifiers, and merging referenced configs.
+
+    Args:
+        config (dict): The loaded base config containing a profiles section.
+        config_path (str): Base path to resolve referenced YAML files.
+        profile (str): The selected profile name (or None to use the default "~" profile).
+        profile_specifiers (List[str]): Dotted specifiers to merge additional profile fragments.
+        profiles_keyword (str): Key name in the config that holds profiles.
+    """
     default_paths = None
     
     if isinstance(config[profiles_keyword], dict):
@@ -376,7 +389,15 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
     del config[profiles_keyword]
 
 
-def unpack_collection(config: Config, config_path: str, collection_keyword: str):
+def unpack_collection(config: dict, config_path: str, collection_keyword: str):
+        """
+        Expand a keyring/collection section into concrete subconfigs.
+
+        Args:
+            config (dict): The loaded base config containing a collection section.
+            config_path (str): Base path to resolve referenced YAML files.
+            collection_keyword (str): Key name in the config that holds the collection definitions.
+        """
         collections_dict = config[collection_keyword]
         
         for collection_key in collections_dict.keys():
@@ -450,16 +471,18 @@ def parse_initial_args(
     arg_parser: argparse.ArgumentParser,
     config_argument_keyword: str, 
     profiles_keyword: str,
-) -> Tuple[str, List[str]]:
+    profile_argument_keyword: str,
+) -> Tuple[Any, Any, Any, list[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
-    return the path of that config, any profiles information, and the used keywords. Otherwise, return None
+    return the path of that config, any profile information, and the used keywords. Otherwise, return None
 
     Args:
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
         config_argument_keyword (str): Default keyword to accept new config path from the 
             command line.
-        profiles_keyword (str): Default keyword for profiles
+        profiles_keyword (str): Default keyword for profiles (YAML key). Defaults to "profiles".
+        profile_argument_keyword (str): Command line keyword for selecting profiles. Defaults to "profile".
     
     Returns:
         str: A string of the path to the alternate config.
@@ -468,20 +491,23 @@ def parse_initial_args(
         List[str]: The argument names used by the initial args that should be ignored at later steps
     """
 
+    arg_parser.add_argument("_pos_profile_", metavar="profile", type=str, nargs="?", default=None)
     arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
-    arg_parser.add_argument(f"--{profiles_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
+    arg_parser.add_argument(f"--{profile_argument_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
 
     known_args, _ = arg_parser.parse_known_args()
     
+    profile = known_args._pos_profile_
     profile_specifiers = known_args._profile_specifiers
     
-    profile=None
     if len(profile_specifiers) > 0 and "." not in profile_specifiers[0]:
+        if profile is not None:
+            raise ValueError(f"Cannot specify profile in two places: {profile} vs. {profile_specifiers[0]}")
         profile = profile_specifiers[0]
         del profile_specifiers[0]
 
     config_path = getattr(known_args, config_argument_keyword)
-    return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
+    return config_path, profile, profile_specifiers, ["_pos_profile_", config_argument_keyword, "_profile_specifiers"]
 
 
 def config_to_nested_config(config: Config) -> Config:
@@ -494,7 +520,7 @@ def config_to_nested_config(config: Config) -> Config:
     Returns:
         Config: A nested Config representation of the input Config object.
     """
-    nested_dict = {}
+    nested_dict: Dict[str, Any] = {}
     for key, value in vars(config).items():
         keys = key.split(".")
         current_dict = nested_dict

@@ -2,7 +2,7 @@ import inspect
 import functools
 
 from .config import Config
-from typing import Type, Any, Tuple, Iterable, Callable
+from typing import Type, Any, Callable, Union, Dict
 
 INSTANCE_KEYWORD: str = "_instance_"
 PARTIAL_KEYWORD: str = "_partial_"
@@ -29,7 +29,7 @@ def import_target(class_string: str) -> Type[Any]:
 
 
 def instantiate(
-    *configs:Iterable[Config], 
+    *configs:Union[Config, Dict[str, Any]], 
     instance_keyword:str=INSTANCE_KEYWORD,
     partial_keyword:str=PARTIAL_KEYWORD,
     fetch_keyword:str=FETCH_KEYWORD,
@@ -68,18 +68,33 @@ def instantiate(
             
 
 def _instantiate_single(
-    config: Config,
+    config: Union[Config, Dict[str, Any]],
     instance_keyword:str=INSTANCE_KEYWORD,
     partial_keyword:str=PARTIAL_KEYWORD,
     fetch_keyword:str=FETCH_KEYWORD,
     _instantiate_recursive:bool=True,
     **extra_kwargs
 ) -> Any:
+    """
+    Instantiate a single config (Config or dict), optionally recursing into subconfigs.
+
+    Args:
+        config (Config|dict): The config to instantiate.
+        instance_keyword (str): Keyword for full instantiation. Defaults to "_instance_".
+        partial_keyword (str): Keyword for partial instantiation. Defaults to "_partial_".
+        fetch_keyword (str): Keyword for fetch-only values. Defaults to "_fetch_".
+        _instantiate_recursive (bool): Whether to instantiate nested configs. Defaults to True.
+        **extra_kwargs: Extra kwargs to overlay onto the instantiation call.
+
+    Returns:
+        Any: The instantiated object (or partial/fetch result).
+    """
     
+    kwargs: Dict[str, Any] = {}
     if not isinstance(config, dict):
-        kwargs:dict = config.to_dict().copy()
+        kwargs = config.to_dict().copy()
     else:
-        kwargs:dict = config.copy()
+        kwargs = config.copy()
 
     # Recursively instantiate subconfigs
     if _instantiate_recursive:
@@ -128,7 +143,7 @@ def _is_instantiatable(value: Any, instance_keyword=INSTANCE_KEYWORD, partial_ke
     return isinstance(value, dict) and any(keyword in value for keyword in [instance_keyword, partial_keyword, fetch_keyword])
 
 
-def _instance(target: Callable, kwargs: dict, config: Config) -> Any:
+def _instance(target: Callable, kwargs: dict, config: Union[Config, Dict[str, Any]]) -> Any:
     """
     Create an instance of a class target with the given keyword arguments, checking for missing parameters.
 
@@ -159,7 +174,7 @@ def _instance(target: Callable, kwargs: dict, config: Config) -> Any:
         )
     return target(**kwargs)
 
-def _partial(target: Callable, kwargs: dict, config: Config) -> functools.partial:
+def _partial(target: Callable, kwargs: dict, config: Union[Config, Dict[str, Any]]) -> functools.partial:
     """
     Create a partial instantiation of a class target with the given keyword arguments.
 
@@ -175,7 +190,7 @@ def _partial(target: Callable, kwargs: dict, config: Config) -> functools.partia
     return functools.partial(target, **kwargs)
 
 
-def _fetch(target: Any, kwargs: dict, config: Config) -> Any:
+def _fetch(target: Any, kwargs: dict, config: Union[Config, Dict[str, Any]]) -> Any:
     if kwargs != {}:
         raise ValueError(f"Error in config: {config}. Configs instantiated with the _fetch_ keyword cannot have any additional arguments.")
     
