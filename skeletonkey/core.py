@@ -2,7 +2,7 @@ import argparse
 import functools
 import os
 import sys
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict
 import warnings
 
 from .config import (
@@ -18,6 +18,8 @@ from .config import (
 BASE_PROFILES_KEYWORD: str = "profile"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 BASE_CL_CONFIG_KEYWORD: str = "config"
+
+_COMMAND_LINE_UNLOCK: Dict[str, int] = {}
 
 
 def get_config_dir_path(config_path: str) -> str:
@@ -55,9 +57,9 @@ def unlock(
     config_name: Optional[str] = None, 
     config_dir: Optional[str] = None,
     prefix: Optional[str] = None,
-    config_argument_keyword: Optional[str] = BASE_CL_CONFIG_KEYWORD,
-    profiles_keyword: Optional[str] = BASE_PROFILES_KEYWORD,
-    collection_keyword: Optional[str] = BASE_COLLECTION_KEYWORD,
+    config_argument_keyword: str = BASE_CL_CONFIG_KEYWORD,
+    profiles_keyword: str = BASE_PROFILES_KEYWORD,
+    collection_keyword: str = BASE_COLLECTION_KEYWORD,
 ) -> Callable:
     """
     Create a decorator for parsing and injecting configuration arguments into a
@@ -89,11 +91,8 @@ def unlock(
 
         # If they have more than one unlock, warn user than the command-line config will
         # overwrite all the configs for all unlocks.
-        if not hasattr(unlock, "_command_line_unlock"):
-            setattr(unlock, "_command_line_unlock", {})
-            unlock._command_line_unlock[config_argument_keyword] = unlock._command_line_unlock.get(config_argument_keyword, 0) + 1
-
-        if unlock._command_line_unlock.get(config_argument_keyword, 0) > 1:
+        _COMMAND_LINE_UNLOCK[config_argument_keyword] = _COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) + 1
+        if _COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) > 1:
             warnings.warn(f"Multiple @unlock decorators are present with the same command line keyword " 
                           + f"'{config_argument_keyword}'. The command line configurations will be used for all @unlock calls.")
 
@@ -106,7 +105,7 @@ def unlock(
     # Create decorator
     def _parse_config(main: Callable):
         @functools.wraps(main)
-        def _inner_function(config: Config=None):
+        def _inner_function(config: Optional[Config]=None):
             config_dict = load_yaml_config(
                 config_path=config_dir, 
                 config_name=config_name, 
@@ -122,8 +121,8 @@ def unlock(
                 prefix=prefix + "." if prefix is not None else "",
             )
 
-            args = parser.parse_args()
-            args = namespace_to_config(args)
+            parsed_args = parser.parse_args()
+            args = namespace_to_config(parsed_args)
 
             for temp_arg in temp_args:
                 del args[temp_arg]

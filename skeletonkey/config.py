@@ -10,7 +10,7 @@ import yaml
 import argparse
 import os
 import uuid
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any, Dict
 
 class Config():
     def __init__(self, config_dict: dict):
@@ -376,7 +376,7 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
     del config[profiles_keyword]
 
 
-def unpack_collection(config: Config, config_path: str, collection_keyword: str):
+def unpack_collection(config: dict, config_path: str, collection_keyword: str):
         collections_dict = config[collection_keyword]
         
         for collection_key in collections_dict.keys():
@@ -450,7 +450,7 @@ def parse_initial_args(
     arg_parser: argparse.ArgumentParser,
     config_argument_keyword: str, 
     profiles_keyword: str,
-) -> Tuple[str, List[str]]:
+) -> Tuple[Any, Any, Any, list[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
     return the path of that config, any profile information, and the used keywords. Otherwise, return None
@@ -459,7 +459,7 @@ def parse_initial_args(
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
         config_argument_keyword (str): Default keyword to accept new config path from the 
             command line.
-        profiles_keyword (str): Default keyword for profiles
+        profiles_keyword (str): Default keyword for profiles (and the optional positional profile)
     
     Returns:
         str: A string of the path to the alternate config.
@@ -497,7 +497,7 @@ def config_to_nested_config(config: Config) -> Config:
     Returns:
         Config: A nested Config representation of the input Config object.
     """
-    nested_dict = {}
+    nested_dict: Dict[str, Any] = {}
     for key, value in vars(config).items():
         keys = key.split(".")
         current_dict = nested_dict
