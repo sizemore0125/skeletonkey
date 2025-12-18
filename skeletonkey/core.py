@@ -15,7 +15,7 @@ from .config import (
     Config,
 )
 
-BASE_PROFILES_KEYWORD: str = "profiles"
+BASE_PROFILES_KEYWORD: str = "profile"
 BASE_COLLECTION_KEYWORD: str = "keyring"
 BASE_CL_CONFIG_KEYWORD: str = "config"
 

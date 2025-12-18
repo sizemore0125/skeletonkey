@@ -1,4 +1,4 @@
-profiles:
+profile:
   
   ~train:
     default: defaults/train.yaml

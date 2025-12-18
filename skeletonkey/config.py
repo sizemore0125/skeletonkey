@@ -240,7 +240,7 @@ def load_yaml_config(
     Args:
         config_path (str): The file path to the YAML configuration file.
         config_name (str): The name of the YAML configuration file.
-        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
+        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profile".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -453,7 +453,7 @@ def parse_initial_args(
 ) -> Tuple[str, List[str]]:
     """
     Check to see if the user specified a config or profile information via the command line. If so,
-    return the path of that config, any profiles information, and the used keywords. Otherwise, return None
+    return the path of that config, any profile information, and the used keywords. Otherwise, return None
 
     Args:
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
@@ -468,20 +468,23 @@ def parse_initial_args(
         List[str]: The argument names used by the initial args that should be ignored at later steps
     """
 
+    arg_parser.add_argument("_pos_profile_", metavar="profile", type=str, nargs="?", default=None)
     arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
     arg_parser.add_argument(f"--{profiles_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[])
 
     known_args, _ = arg_parser.parse_known_args()
     
+    profile = known_args._pos_profile_
     profile_specifiers = known_args._profile_specifiers
     
-    profile=None
     if len(profile_specifiers) > 0 and "." not in profile_specifiers[0]:
+        if profile is not None:
+            raise ValueError(f"Cannot specify profile in two places: {profile} vs. {profile_specifiers[0]}")
         profile = profile_specifiers[0]
         del profile_specifiers[0]
 
     config_path = getattr(known_args, config_argument_keyword)
-    return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
+    return config_path, profile, profile_specifiers, ["_pos_profile_", config_argument_keyword, "_profile_specifiers"]
 
 
 def config_to_nested_config(config: Config) -> Config:
