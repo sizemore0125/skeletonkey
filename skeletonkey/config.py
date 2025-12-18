@@ -240,7 +240,10 @@ def load_yaml_config(
     Args:
         config_path (str): The file path to the YAML configuration file.
         config_name (str): The name of the YAML configuration file.
+        profile (str): The selected profile name, if provided.
+        profile_specifiers (List[str]): Additional dotted profile specifiers to merge into the selected profile.
         profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profile".
+        collection_keyword (str): The keyword used to identify collections in the YAML file. Defaults to "keyring".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -292,7 +295,7 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
 
     Args:
         config_path (str): The file path to the YAML base configuration file.
-        default_yml (str): The relative path to to the default YAML subconfiguration file.
+        default_yaml (str): The relative path to the default YAML subconfiguration file.
 
     Returns:
         dict: The updated configuration dictionary.
@@ -303,6 +306,16 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     return default_config
 
 def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: List[str], profiles_keyword: str):
+    """
+    Resolve a profiles section by selecting a profile, applying any specifiers, and merging referenced configs.
+
+    Args:
+        config (dict): The loaded base config containing a profiles section.
+        config_path (str): Base path to resolve referenced YAML files.
+        profile (str): The selected profile name (or None to use the default "~" profile).
+        profile_specifiers (List[str]): Dotted specifiers to merge additional profile fragments.
+        profiles_keyword (str): Key name in the config that holds profiles.
+    """
     default_paths = None
     
     if isinstance(config[profiles_keyword], dict):
@@ -377,6 +390,14 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
 
 
 def unpack_collection(config: dict, config_path: str, collection_keyword: str):
+        """
+        Expand a keyring/collection section into concrete subconfigs.
+
+        Args:
+            config (dict): The loaded base config containing a collection section.
+            config_path (str): Base path to resolve referenced YAML files.
+            collection_keyword (str): Key name in the config that holds the collection definitions.
+        """
         collections_dict = config[collection_keyword]
         
         for collection_key in collections_dict.keys():
@@ -459,7 +480,7 @@ def parse_initial_args(
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
         config_argument_keyword (str): Default keyword to accept new config path from the 
             command line.
-        profiles_keyword (str): Default keyword for profiles (and the optional positional profile)
+        profiles_keyword (str): Default keyword for profiles (and the optional positional profile). Defaults to "profile".
     
     Returns:
         str: A string of the path to the alternate config.

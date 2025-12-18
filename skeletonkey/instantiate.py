@@ -75,6 +75,20 @@ def _instantiate_single(
     _instantiate_recursive:bool=True,
     **extra_kwargs
 ) -> Any:
+    """
+    Instantiate a single config (Config or dict), optionally recursing into subconfigs.
+
+    Args:
+        config (Config|dict): The config to instantiate.
+        instance_keyword (str): Keyword for full instantiation. Defaults to "_instance_".
+        partial_keyword (str): Keyword for partial instantiation. Defaults to "_partial_".
+        fetch_keyword (str): Keyword for fetch-only values. Defaults to "_fetch_".
+        _instantiate_recursive (bool): Whether to instantiate nested configs. Defaults to True.
+        **extra_kwargs: Extra kwargs to overlay onto the instantiation call.
+
+    Returns:
+        Any: The instantiated object (or partial/fetch result).
+    """
     
     kwargs: Dict[str, Any] = {}
     if not isinstance(config, dict):

@@ -62,13 +62,21 @@ def unlock(
     collection_keyword: str = BASE_COLLECTION_KEYWORD,
 ) -> Callable:
     """
-    Create a decorator for parsing and injecting configuration arguments into a
-    main function from a YAML file.
+    Create a decorator for parsing and injecting configuration arguments into a main 
+        function from a YAML file.
 
     Args:
-        config_name (str): The name of the YAML configuration file.
-        config_path (str): The path to the directory containing the configuration
-                           file. Defaults to the current directory.
+        config_name (str): The name/path of the YAML configuration file. Can be absolute 
+            or relative.
+        config_dir (str): Optional directory to resolve the config from; defaults to the 
+            directory of config_name.
+        prefix (str): Optional prefix to nest this unlock's arguments under.
+        config_argument_keyword (str): Command line flag to override the config path 
+            (defaults to "config").
+        profiles_keyword (str): Keyword for profile selection in the YAML/config CLI 
+            (defaults to "profile").
+        collection_keyword (str): Keyword for collections in the YAML 
+            (defaults to "keyring").
 
     Returns:
         Callable: A decorator function that, when applied to a main function, will
