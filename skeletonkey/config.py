@@ -9,6 +9,7 @@ files and enables the dynamic loading of classes and their arguments at runtime.
 
 import yaml
 import argparse
+import copy
 import os
 import uuid
 from typing import List, Tuple, Union, Any, Dict
@@ -129,6 +130,9 @@ class Config:
                 else:
                     config_dict[k] = v
         return config_dict
+
+    def copy(self):
+        return Config(copy.deepcopy(self.to_dict()))
 
 
 def find_yaml_path(file_path: str) -> str:
