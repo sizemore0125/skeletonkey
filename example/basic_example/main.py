@@ -1,17 +1,22 @@
 # Adds the local skeletonkey source code to path, so that version is imported
 import os, sys, pprint
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
 
 import skeletonkey
+
 
 class MyModel:
     def __init__(self, layer_size: int, activation: str) -> None:
         self.layer_size = layer_size
         self.activation = activation
 
+
 @skeletonkey.unlock("config.yaml")
 def main(args):
     print(args)
+    print(dict(args))
+
     model = skeletonkey.instantiate(args.model)
     print("Instantiate Function:")
     print("Model layer size: ", model.layer_size)
@@ -24,9 +29,10 @@ def main(args):
     print("Model layer size: ", model.layer_size)
     print("Model activation: ", model.activation)
     print("Number of Epochs: ", args.epochs)
-    print("Debug Flag: ", args.debug)   
+    print("Debug Flag: ", args.debug)
 
     pprint.pp(args.to_dict())
 
-if __name__ == "__main__":  
+
+if __name__ == "__main__":
     main()
