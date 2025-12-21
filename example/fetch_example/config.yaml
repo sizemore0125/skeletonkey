@@ -2,3 +2,6 @@
 func:
   _fetch_: main.func1
   # _fetch_: main.func2
+
+func3:
+  _fetch_: main.func3

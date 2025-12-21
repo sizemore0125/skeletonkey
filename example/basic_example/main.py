@@ -12,6 +12,12 @@ class MyModel:
         self.activation = activation
 
 
+class MyObjective:
+    def __init__(self, *args):
+        print(f"My objective: {args}")
+        return None
+
+
 @skeletonkey.unlock("config.yaml")
 def main(args):
     print(args)
@@ -30,6 +36,8 @@ def main(args):
     print("Model activation: ", model.activation)
     print("Number of Epochs: ", args.epochs)
     print("Debug Flag: ", args.debug)
+
+    objective = args.objective.instantiate()
 
     pprint.pp(args.to_dict())
 

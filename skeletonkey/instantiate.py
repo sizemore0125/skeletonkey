@@ -158,10 +158,15 @@ def _instance(target: Callable, kwargs: dict, config: Union[Config, Dict[str, An
 
    # Check for missing parameters 
     obj_parameters = inspect.signature(target).parameters
-    required_parameters = [
-        param_name for param_name, param in obj_parameters.items()
-        if param.default == param.empty and param.kind != inspect.Parameter.VAR_KEYWORD
-    ]
+    required_parameters = []
+    for param_name, param in obj_parameters.items():
+        if param.default != param.empty:
+            continue
+        if param.kind in (inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL):
+            continue  # Skip **kwargs and *args; they are never required
+        if param.kind is inspect.Parameter.POSITIONAL_ONLY:
+            continue  # Cannot satisfy positional-only via kwargs; ignore in this check
+        required_parameters.append(param_name)
 
     valid_parameters = {k: v for k, v in kwargs.items() if k in required_parameters}
     missing_parameters = [k for k in required_parameters if k not in valid_parameters.keys()]
