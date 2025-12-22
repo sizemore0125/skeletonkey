@@ -134,6 +134,16 @@ class Config:
     def copy(self):
         return Config(copy.deepcopy(self.to_dict()))
 
+    def to_yaml(self, path: str, **kwargs) -> str:
+        """
+        Save Config to YAML at the given path.
+        Extra yaml.safe_dump kwargs can be passed via dump_kwargs.
+        """
+        config_dict = self.to_dict()
+        with open(path, "w") as f:
+            yaml.safe_dump(config_dict, f, sort_keys=False, **kwargs)
+        return path
+
 
 def find_yaml_path(file_path: str) -> str:
     """
