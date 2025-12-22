@@ -89,7 +89,7 @@ def unlock(
                   main function.
     """
     # Parse high-level arguments
-    parser = argparse.ArgumentParser(allow_abbrev=False)
+    parser = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
     initial_args = parse_initial_args(
         arg_parser=parser,
         config_argument_keyword=config_argument_keyword,
