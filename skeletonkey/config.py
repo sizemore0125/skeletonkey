@@ -1,15 +1,15 @@
-"""Utilities for handling YAML configurations in SkeletonKey.
+"""Utilities for handling YAML configurations in skeletonkey.
 
-Provides helpers for loading, transforming, and updating configuration data,
-including nested access, YAML parsing, and profile/collection expansion.
+Provides helpers for loading, transforming, and updating configuration data.
 """
 
-import yaml
 import argparse
 import copy
 import os
 import uuid
-from typing import List, Tuple, Union, Any, Dict
+from typing import Any, Dict, List, Tuple, Union
+
+import yaml
 
 
 class Config:

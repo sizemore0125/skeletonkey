@@ -9,7 +9,7 @@ Attributes:
 
 __version__ = "0.3.2.0"
 
-from .core import unlock, Config
+from .core import Config, unlock
 from .instantiate import instantiate
 
 # Names to import with wildcard import

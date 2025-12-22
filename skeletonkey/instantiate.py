@@ -9,11 +9,11 @@ Attributes:
     FETCH_KEYWORD (str): Config key indicating a fetch-only reference.
 """
 
-import inspect
 import functools
+import inspect
+from typing import Any, Callable, Dict, Type, Union
 
 from .config import Config
-from typing import Type, Any, Callable, Union, Dict
 
 INSTANCE_KEYWORD: str = "_instance_"
 PARTIAL_KEYWORD: str = "_partial_"

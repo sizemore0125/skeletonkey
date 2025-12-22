@@ -16,8 +16,8 @@ import argparse
 import functools
 import os
 import sys
-from typing import Callable, Optional, Dict
 import warnings
+from typing import Callable, Dict, Optional
 
 from .config import (
     parse_initial_args,
