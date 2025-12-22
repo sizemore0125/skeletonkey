@@ -1,14 +1,13 @@
-"""
-Author: Logan Sizemore
-Date: 4/30/23
+"""Public API surface for SkeletonKey.
 
-This code provides decorator for parsing and injecting configuration arguments into a main function 
-and an instantiate funtion that can dynamically instantiate classes with their configurations. 
-It facilitates the management of complex configurations for applications using YAML files and enables 
-the dynamic loading of classes and their arguments at runtime.
+Provides helpers for parsing YAML-based configurations into CLI arguments and
+for instantiating classes from those configurations.
+
+Attributes:
+    __version__ (str): skeletonkey package version.
 """
 
-__version__ = "0.0.11"
+__version__ = "0.3.2.0"
 
 from .core import unlock, Config
 from .instantiate import instantiate
