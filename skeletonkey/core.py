@@ -36,9 +36,10 @@ def get_config_dir_path(config_path: str) -> str:
     # Check if the given config_path is a relative path
     if not os.path.isabs(config_path):
         # Get the directory of the main script file (entry point) in absolute form
-        path_from_main = os.path.dirname(
-            os.path.abspath(str(sys.modules["__main__"].__file__))
-        )
+        try:
+            path_from_main = os.path.dirname(os.path.abspath(str(sys.modules["__main__"].__file__)))
+        except:
+            path_from_main = os.getcwd()
 
         if config_path.startswith("./"):
             config_path = config_path[len("./") :]
@@ -55,7 +56,7 @@ def get_config_dir_path(config_path: str) -> str:
 
 
 def unlock(
-    config_name: Optional[str] = None, 
+    config_name: Optional[str] = None,
     config_dir: Optional[str] = None,
     prefix: Optional[str] = None,
     config_argument_keyword: str = BASE_CL_CONFIG_KEYWORD,
@@ -64,22 +65,22 @@ def unlock(
     collection_keyword: str = BASE_COLLECTION_KEYWORD,
 ) -> Callable:
     """
-    Create a decorator for parsing and injecting configuration arguments into a main 
+    Create a decorator for parsing and injecting configuration arguments into a main
         function from a YAML file.
 
     Args:
-        config_name (str): The name/path of the YAML configuration file. Can be absolute 
+        config_name (str): The name/path of the YAML configuration file. Can be absolute
             or relative.
-        config_dir (str): Optional directory to resolve the config from; defaults to the 
+        config_dir (str): Optional directory to resolve the config from; defaults to the
             directory of config_name.
         prefix (str): Optional prefix to nest this unlock's arguments under.
-        config_argument_keyword (str): Command line flag to override the config path 
+        config_argument_keyword (str): Command line flag to override the config path
             (defaults to "config").
-        profiles_keyword (str): Keyword for profile selection in the YAML 
+        profiles_keyword (str): Keyword for profile selection in the YAML
             (defaults to "profiles").
-        profile_argument_keyword (str): Command line flag for selecting profiles 
+        profile_argument_keyword (str): Command line flag for selecting profiles
             (defaults to "profile").
-        collection_keyword (str): Keyword for collections in the YAML 
+        collection_keyword (str): Keyword for collections in the YAML
             (defaults to "keyring").
 
     Returns:
@@ -88,15 +89,15 @@ def unlock(
                   main function.
     """
     # Parse high-level arguments
-    parser = argparse.ArgumentParser(allow_abbrev=False)    
+    parser = argparse.ArgumentParser(allow_abbrev=False)
     initial_args = parse_initial_args(
-        arg_parser=parser, 
-        config_argument_keyword=config_argument_keyword, 
+        arg_parser=parser,
+        config_argument_keyword=config_argument_keyword,
         profiles_keyword=profiles_keyword,
         profile_argument_keyword=profile_argument_keyword,
     )
     config_dir_command_line, profile, profile_specifiers, temp_args = initial_args
-    
+
     # Find final config name and directory
     if config_dir_command_line is not None:
         config_name = os.path.abspath(config_dir_command_line)
@@ -106,31 +107,33 @@ def unlock(
         # overwrite all the configs for all unlocks.
         _COMMAND_LINE_UNLOCK[config_argument_keyword] = _COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) + 1
         if _COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) > 1:
-            warnings.warn(f"Multiple @unlock decorators are present with the same command line keyword " 
-                          + f"'{config_argument_keyword}'. The command line configurations will be used for all @unlock calls.")
+            warnings.warn(
+                f"Multiple @unlock decorators are present with the same command line keyword "
+                + f"'{config_argument_keyword}'. The command line configurations will be used for all @unlock calls."
+            )
 
     if config_name is not None:
         config_dir = get_config_dir_path(os.path.dirname(config_name))
-    else: 
+    else:
         raise ValueError("config path is neither specified in 'unlock' nor via the command line.")
     config_name = os.path.basename(add_yaml_extension(config_name))
 
     # Create decorator
     def _parse_config(main: Callable):
         @functools.wraps(main)
-        def _inner_function(config: Optional[Config]=None):
+        def _inner_function(config: Optional[Config] = None):
             config_dict = load_yaml_config(
-                config_path=config_dir, 
-                config_name=config_name, 
-                profile=profile, 
+                config_path=config_dir,
+                config_name=config_name,
+                profile=profile,
                 profile_specifiers=profile_specifiers,
                 profiles_keyword=profiles_keyword,
-                collection_keyword=collection_keyword
+                collection_keyword=collection_keyword,
             )
 
             add_args_from_dict(
-                arg_parser=parser, 
-                config_dict=config_dict, 
+                arg_parser=parser,
+                config_dict=config_dict,
                 prefix=prefix + "." if prefix is not None else "",
             )
 
@@ -141,7 +144,7 @@ def unlock(
                 del args[temp_arg]
 
             args = config_to_nested_config(args)
-            
+
             if config is not None:
                 args.update(config)
 
@@ -150,4 +153,3 @@ def unlock(
         return _inner_function
 
     return _parse_config
-
