@@ -1,9 +1,23 @@
+"""Configuration helpers for skeletonkey.
+
+Utilities for resolving configuration paths and building the `unlock`
+decorator.
+
+Attributes:
+    BASE_PROFILES_KEYWORD (str): YAML key for profiles sections.
+    BASE_PROFILE_ARGUMENT_KEYWORD (str): CLI flag used to select profiles.
+    BASE_COLLECTION_KEYWORD (str): YAML key for collections/keyrings.
+    BASE_CL_CONFIG_KEYWORD (str): CLI flag used to override the config path.
+    _COMMAND_LINE_UNLOCK (dict[str, int]): Counter tracking uses of command-line
+        config overrides per keyword.
+"""
+
 import argparse
 import functools
 import os
 import sys
-from typing import Callable, Optional, Dict
 import warnings
+from typing import Callable, Dict, Optional
 
 from .config import (
     parse_initial_args,
@@ -24,14 +38,13 @@ _COMMAND_LINE_UNLOCK: Dict[str, int] = {}
 
 
 def get_config_dir_path(config_path: str) -> str:
-    """
-    Convert a given relative or absolute config file path to its absolute directory path.
+    """Resolve a config path to an absolute directory path.
 
     Args:
-        config_path (str): The path to the configuration file. Can be either relative or absolute.
+        config_path (str): Relative or absolute path to the configuration file.
 
     Returns:
-        str: The absolute directory path containing the configuration file.
+        str: Absolute directory containing the configuration file.
     """
     # Check if the given config_path is a relative path
     if not os.path.isabs(config_path):
@@ -64,36 +77,37 @@ def unlock(
     profile_argument_keyword: str = BASE_PROFILE_ARGUMENT_KEYWORD,
     collection_keyword: str = BASE_COLLECTION_KEYWORD,
 ) -> Callable:
-    """
-    Create a decorator for parsing and injecting configuration arguments into a main
-        function from a YAML file.
+    """Create a decorator that injects parsed YAML configuration into a function.
 
     Args:
-        config_name (str): The name/path of the YAML configuration file. Can be absolute
-            or relative.
-        config_dir (str): Optional directory to resolve the config from; defaults to the
-            directory of config_name.
-        prefix (str): Optional prefix to nest this unlock's arguments under.
-        config_argument_keyword (str): Command line flag to override the config path
-            (defaults to "config").
-        profiles_keyword (str): Keyword for profile selection in the YAML
-            (defaults to "profiles").
-        profile_argument_keyword (str): Command line flag for selecting profiles
-            (defaults to "profile").
-        collection_keyword (str): Keyword for collections in the YAML
-            (defaults to "keyring").
+        config_name (Optional[str]): Name or path of the YAML configuration
+            file; relative or absolute.
+        config_dir (Optional[str]): Directory to resolve the config from;
+            defaults to the directory of `config_name`.
+        prefix (Optional[str]): Optional prefix to nest this unlock's arguments
+            under.
+        config_argument_keyword (str): Command line flag to override the config
+            path. Defaults to "config".
+        profiles_keyword (str): Keyword for profile selection in the YAML.
+            Defaults to "profiles".
+        profile_argument_keyword (str): Command line flag for selecting
+            profiles. Defaults to "profile".
+        collection_keyword (str): Keyword for collections in the YAML. Defaults
+            to "keyring".
 
     Returns:
-        Callable: A decorator function that, when applied to a main function, will
-                  parse the configuration file and inject the arguments into the
-                  main function.
+        Callable: Decorator that parses the configuration file and injects the
+            resulting arguments into the decorated function.
+
+    Raises:
+        ValueError: If neither the decorator nor the command line supplies a
+            config path.
     """
     # Parse high-level arguments
     parser = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
     initial_args = parse_initial_args(
         arg_parser=parser,
         config_argument_keyword=config_argument_keyword,
-        profiles_keyword=profiles_keyword,
         profile_argument_keyword=profile_argument_keyword,
     )
     config_dir_command_line, profile, profile_specifiers, temp_args = initial_args

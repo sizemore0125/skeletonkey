@@ -1,37 +1,39 @@
-"""
-Author: Logan Sizemore
-Date: 4/27/23
+"""Utilities for handling YAML configurations in skeletonkey.
 
-This code provides a set of utility functions to handle YAML configurations.
-It facilitates the management of complex configurations for applications using YAML
-files and enables the dynamic loading of classes and their arguments at runtime.
+Provides helpers for loading, transforming, and updating configuration data.
 """
 
-import yaml
 import argparse
 import copy
 import os
 import uuid
-from typing import List, Tuple, Union, Any, Dict
+from typing import Any, Dict, List, Tuple, Union
+
+import yaml
 
 
 class Config:
     def __init__(self, config_dict: dict):
-        """
-        Initializes the config from a dictionary.\n
+        """Initialize the config from a dictionary.
+
+        Args:
+            config_dict (dict): Source dictionary.
         """
         if not isinstance(config_dict, dict):
             raise ValueError("Supplied arg must be a dictionary")
         self._init_from_dict(config_dict)
 
     def update(self, update_config: Union[dict, "Config"]):
-        """
-        Take a config in some format and place those values into the config.
-        This will overwrite values if they are present or create them if they are not.
+        """Place values from another config into this one.
+
+        This overwrites values if they are present or creates them if they are not.
 
         Args:
-            update_config (dict|Config): The keys/values to place into the config. If this is a dictionary,
-            it is expected that the keys are in dot notation.
+            update_config (dict | Config): Keys/values to place into the config.
+                When provided as a dictionary, keys are expected in dot notation.
+
+        Returns:
+            Config: The updated config.
         """
         if not isinstance(update_config, Config):
             update_config = config_to_nested_config(Config(update_config))
@@ -39,9 +41,10 @@ class Config:
         return self
 
     def _update_from_config(self, update_config: "Config"):
-        """
-        Recursively place all of the values from update_config into self, overwriting them if they
-        exist and adding them if they do not.
+        """Recursively place values from another config into this one.
+
+        Args:
+            update_config (Config): Config whose values should be merged.
         """
         for k, v in update_config.__dict__.items():
 
@@ -55,8 +58,7 @@ class Config:
                 self[k] = update_config[k]
 
     def _init_from_dict(self, dictionary: dict):
-        """
-        Initialize the config from a dictionary
+        """Initialize the config from a dictionary.
 
         Args:
             dictionary (dict): The dictionary to be converted.
@@ -98,12 +100,14 @@ class Config:
         return instantiate(self, **kwargs)
 
     def _subconfig_str(self, subspace: "Config", tab_depth: int):
-        """
-        Convert a given subconfig to a string with the given tab-depth
+        """Convert a given subconfig to a string with the given tab-depth.
 
-        args:
-            subspace: A Config object
-            tab_depth: an integer representing the current tab depth
+        Args:
+            subspace (Config): Config to render.
+            tab_depth (int): Current tab depth.
+
+        Returns:
+            str: Rendered subconfig string.
         """
         s = ""
         for k, v in subspace.__dict__.items():
@@ -135,9 +139,16 @@ class Config:
         return Config(copy.deepcopy(self.to_dict()))
 
     def to_yaml(self, path: str, **kwargs) -> str:
-        """
-        Save Config to YAML at the given path.
-        Extra yaml.safe_dump kwargs can be passed via kwargs.
+        """Save Config to YAML at the given path.
+
+        Extra `yaml.safe_dump` kwargs can be passed via `kwargs`.
+
+        Args:
+            path (str): Destination path for the YAML file.
+            **kwargs: Extra keyword arguments forwarded to `yaml.safe_dump`.
+
+        Returns:
+            str: The saved path.
         """
         config_dict = self.to_dict()
         with open(path, "w") as f:
@@ -146,15 +157,16 @@ class Config:
 
 
 def find_yaml_path(file_path: str) -> str:
-    """
-    Given a file path, this function checks if a YAML file exists with either
-    '.yml' or '.yaml' extension, and returns the correct path.
+    """Resolve a file path to an existing YAML file.
+
+    Checks for either `.yml` or `.yaml` extensions and returns the correct path.
 
     Args:
-        file_path (str): The file path without extension or with either '.yml' or '.yaml' extension.
+        file_path (str): File path without extension or with either `.yml` or
+            `.yaml` extension.
 
     Returns:
-        str: The correct file path with the existing extension.
+        str: Path with the existing YAML extension.
 
     Raises:
         FileNotFoundError: If no YAML file is found with either extension.
@@ -175,14 +187,13 @@ def find_yaml_path(file_path: str) -> str:
 
 
 def open_yaml(path: str) -> dict:
-    """
-    Read and parse the YAML file located at the given path.
+    """Read and parse the YAML file located at the given path.
 
     Args:
-        path (str): The file path to the YAML file.
+        path (str): File path to the YAML file.
 
     Returns:
-        dict: A dictionary representing the YAML content.
+        dict: YAML content.
     """
     path = find_yaml_path(path)
     with open(os.path.expanduser(path), "r") as handle:
@@ -190,17 +201,14 @@ def open_yaml(path: str) -> dict:
 
 
 def dict_to_path(dictionary: dict, parent_key="") -> List[str]:
-    """
-    Flatten a nested dictionary into a single-level dictionary by concatenating
-    nested keys using a specified separator.
+    """Flatten a nested dictionary into path-like strings.
 
     Args:
-        dictionary (dict): The nested dictionary to be flattened.
-        parent_key (str): The initial parent key, default is an empty string.
-        sep (str): The separator used to concatenate nested keys, default is '/'.
+        dictionary (dict): Nested dictionary to be flattened.
+        parent_key (str, optional): Initial parent key. Defaults to "".
 
     Returns:
-        dict: A flattened dictionary with single-level keys.
+        List[str]: Flattened paths derived from keys and list values.
     """
     items = []
     for key, value in dictionary.items():
@@ -227,14 +235,13 @@ def dict_to_path(dictionary: dict, parent_key="") -> List[str]:
 
 
 def add_yaml_extension(path: str) -> str:
-    """
-    Append the '.yaml' extension to a given path if it doesn't already have it.
+    """Append the `.yaml` extension to a path if missing.
 
     Args:
-        path (str): The input file path or name.
+        path (str): Input file path or name.
 
     Returns:
-        str: The modified file path or name with the '.yaml' extension added.
+        str: Path with a YAML extension.
     """
     yaml_extention1 = ".yaml"
     yaml_extention2 = ".yml"
@@ -251,16 +258,18 @@ def load_yaml_config(
     profiles_keyword: str,
     collection_keyword: str,
 ) -> dict:
-    """
-    Load a YAML configuration file and update with profiles and collections.
+    """Load a YAML configuration file and update with profiles and collections.
 
     Args:
-        config_path (str): The file path to the YAML configuration file.
-        config_name (str): The name of the YAML configuration file.
-        profile (str): The selected profile name, if provided.
-        profile_specifiers (List[str]): Additional dotted profile specifiers to merge into the selected profile.
-        profiles_keyword (str): The keyword used to identify profiles in the YAML file. Defaults to "profiles".
-        collection_keyword (str): The keyword used to identify collections in the YAML file. Defaults to "keyring".
+        config_path (str): File path to the YAML configuration file.
+        config_name (str): Name of the YAML configuration file.
+        profile (str): Selected profile name, if provided.
+        profile_specifiers (List[str]): Additional dotted profile specifiers to
+            merge into the selected profile.
+        profiles_keyword (str): Keyword used to identify profiles in the YAML
+            file. Defaults to "profiles".
+        collection_keyword (str): Keyword used to identify collections in the
+            YAML file. Defaults to "keyring".
 
     Returns:
         dict: The updated configuration dictionary.
@@ -278,17 +287,19 @@ def load_yaml_config(
 
 
 def override_profile_with_specifier(profile_dict: dict, specifier: str, config: dict) -> None:
-    """
-    Will take the section of the config indicated by the specifier and place it in the profile.
-    If such a section does not exist in the profile, it will be created. If it does, it will be
-    overwritten. If the specifier does not match a subprofile in the config, this will throw an
-    error.
+    """Merge a subconfig referenced by a specifier into a profile.
+
+    If the referenced section does not exist in the profile, it will be created;
+    otherwise, it will be overwritten.
 
     Args:
-        profile_dict (dict): The dictionary holding the profile to be overwritten.
-        specifier (str): The dot-notation specifier referencing which subconfig to bring into
-            the profile
-        config (dict): The profiles config dictionary holding all of the profiles.
+        profile_dict (dict): Dictionary holding the profile to be overwritten.
+        specifier (str): Dot-notation specifier referencing which subconfig to
+            bring into the profile.
+        config (dict): Profiles config dictionary holding all of the profiles.
+
+    Raises:
+        ValueError: If the specifier cannot be matched to any profiles.
     """
 
     alt_profile, *split_specifier, final_key = specifier.split(".")
@@ -307,15 +318,15 @@ def override_profile_with_specifier(profile_dict: dict, specifier: str, config: 
 
 
 def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
-    """
-    Load a YAML default configuration files and returns a dictionary of args.
+    """Load a YAML default configuration file and return its arguments.
 
     Args:
-        config_path (str): The file path to the YAML base configuration file.
-        default_yaml (str): The relative path to the default YAML subconfiguration file.
+        config_path (str): File path to the YAML base configuration file.
+        default_yaml (str): Relative path to the default YAML subconfiguration
+            file.
 
     Returns:
-        dict: The updated configuration dictionary.
+        dict: The loaded configuration dictionary.
     """
     default_yaml = add_yaml_extension(default_yaml)
     default_config_path = os.path.join(config_path, default_yaml)
@@ -323,16 +334,26 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     return default_config
 
 
-def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: List[str], profiles_keyword: str):
-    """
-    Resolve a profiles section by selecting a profile, applying any specifiers, and merging referenced configs.
+def unpack_profiles(
+    config,
+    config_path: str,
+    profile: str,
+    profile_specifiers: List[str],
+    profiles_keyword: str,
+):
+    """Resolve a profiles section by selecting and merging referenced configs.
 
     Args:
-        config (dict): The loaded base config containing a profiles section.
+        config (dict): Loaded base config containing a profiles section.
         config_path (str): Base path to resolve referenced YAML files.
-        profile (str): The selected profile name (or None to use the default "~" profile).
-        profile_specifiers (List[str]): Dotted specifiers to merge additional profile fragments.
+        profile (str): Selected profile name (or None to use the default "~"
+            profile).
+        profile_specifiers (List[str]): Dotted specifiers to merge additional
+            profile fragments.
         profiles_keyword (str): Key name in the config that holds profiles.
+
+    Raises:
+        ValueError: If profile selection or default profile resolution is invalid.
     """
     default_paths = None
 
@@ -401,13 +422,16 @@ def unpack_profiles(config, config_path: str, profile: str, profile_specifiers: 
 
 
 def unpack_collection(config: dict, config_path: str, collection_keyword: str):
-    """
-    Expand a keyring/collection section into concrete subconfigs.
+    """Expand a keyring/collection section into concrete subconfigs.
 
     Args:
-        config (dict): The loaded base config containing a collection section.
+        config (dict): Loaded base config containing a collection section.
         config_path (str): Base path to resolve referenced YAML files.
-        collection_keyword (str): Key name in the config that holds the collection definitions.
+        collection_keyword (str): Key name in the config that holds the
+            collection definitions.
+
+    Raises:
+        ValueError: If a collection name conflicts with an existing argument.
     """
     collections_dict = config[collection_keyword]
 
@@ -432,16 +456,15 @@ def unpack_collection(config: dict, config_path: str, collection_keyword: str):
 
 
 def add_args_from_dict(arg_parser: argparse.ArgumentParser, config_dict: dict, prefix="") -> None:
-    """
-    Add arguments to an ArgumentParser instance using key-value pairs from a
-    configuration dictionary. If the dictionary contains a nested dictionary, the
-    argument will be added as --key.key value.
+    """Add arguments to an ArgumentParser from a configuration dictionary.
+
+    If the dictionary contains a nested dictionary, the argument will be added
+    as `--key.key value`.
+
     Args:
-        arg_parser (argparse.ArgumentParser): The ArgumentParser instance to which
-                                              arguments will be added.
-        config (dict): A dictionary containing key-value pairs representing
-                       the arguments and their default values.
-        prefix (str, optional): The prefix string for nested keys. Defaults to ''.
+        arg_parser (argparse.ArgumentParser): ArgumentParser instance to extend.
+        config_dict (dict): Key-value pairs representing arguments and defaults.
+        prefix (str, optional): Prefix string for nested keys. Defaults to "".
     """
     for key, value in config_dict.items():
         if isinstance(value, dict):
@@ -458,12 +481,13 @@ def add_args_from_dict(arg_parser: argparse.ArgumentParser, config_dict: dict, p
 
 
 def namespace_to_config(flat_config: argparse.Namespace) -> Config:
-    """
-    Given a flat namespace containing some string values, parse those string values as if they were
-    yaml arguemnts into the corresponding python type and return an updated config.
+    """Parse argparse Namespace values as YAML and return a Config.
 
     Args:
-        config (argparse.Namespace): The flat Config whose values should be parsed
+        flat_config (argparse.Namespace): Flat Config whose values should be parsed.
+
+    Returns:
+        Config: Config with parsed values.
     """
     return Config({key: yaml.safe_load(value) if isinstance(value, str) else value for key, value in vars(flat_config).items()})
 
@@ -471,25 +495,21 @@ def namespace_to_config(flat_config: argparse.Namespace) -> Config:
 def parse_initial_args(
     arg_parser: argparse.ArgumentParser,
     config_argument_keyword: str,
-    profiles_keyword: str,
     profile_argument_keyword: str,
 ) -> Tuple[Any, Any, Any, list[str]]:
-    """
-    Check to see if the user specified a config or profile information via the command line. If so,
-    return the path of that config, any profile information, and the used keywords. Otherwise, return None
+    """Parse initial CLI arguments for config and profile information.
 
     Args:
-        arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
-        config_argument_keyword (str): Default keyword to accept new config path from the
-            command line.
-        profiles_keyword (str): Default keyword for profiles (YAML key). Defaults to "profiles".
-        profile_argument_keyword (str): Command line keyword for selecting profiles. Defaults to "profile".
+        arg_parser (argparse.ArgumentParser): Argparse object to add the config
+            arg to.
+        config_argument_keyword (str): Default keyword to accept new config path
+            from the command line.
+        profile_argument_keyword (str): Command line keyword for selecting
+            profiles. Defaults to "profile".
 
     Returns:
-        str: A string of the path to the alternate config.
-        str: The specified profile
-        List[str]: A list of the profile specifiers.
-        List[str]: The argument names used by the initial args that should be ignored at later steps
+        Tuple[Any, Any, List[str], List[str]]: Config path, specified profile,
+            profile specifiers, and argument names to ignore later.
     """
 
     arg_parser.add_argument("_pos_profile_", metavar="profile", type=str, nargs="?", default=None)
@@ -514,14 +534,13 @@ def parse_initial_args(
 
 
 def config_to_nested_config(config: Config) -> Config:
-    """
-    Convert an Config object with 'key1.keyn' formatted keys into a nested Config object.
+    """Convert a Config with dotted keys into a nested Config object.
 
     Args:
-        config (Config): The Config object to be converted.
+        config (Config): Config object to be converted.
 
     Returns:
-        Config: A nested Config representation of the input Config object.
+        Config: Nested Config representation of the input.
     """
     nested_dict: Dict[str, Any] = {}
     for key, value in vars(config).items():
