@@ -90,7 +90,7 @@ Flags can be defined in the configuration YAML file using the `?` prefix followe
 
 For example:
 ```yaml
-?debug: flase
+?debug: false
 ```
 In the above example, a flag named `debug` is defined and set to `false`.
 

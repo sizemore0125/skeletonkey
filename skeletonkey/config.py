@@ -475,7 +475,10 @@ def add_args_from_dict(arg_parser: argparse.ArgumentParser, config_dict: dict, p
                     value = os.environ[key[1:]]
                 arg_parser.add_argument(f"--{prefix}{key[1:]}", default=value)
             elif key.startswith("?"):
-                arg_parser.add_argument(f"--{prefix}{key[1:]}", default=value, action="store_true")
+                if not isinstance(value, bool):
+                    raise ValueError(f"Flag '{prefix}{key[1:]}' must be a boolean in the config.")
+                action = "store_false" if value else "store_true"
+                arg_parser.add_argument(f"--{prefix}{key[1:]}", default=value, action=action)
             else:
                 arg_parser.add_argument(f"--{prefix}{key}", default=value)
 
