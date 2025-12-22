@@ -471,7 +471,6 @@ def namespace_to_config(flat_config: argparse.Namespace) -> Config:
 def parse_initial_args(
     arg_parser: argparse.ArgumentParser,
     config_argument_keyword: str,
-    profiles_keyword: str,
     profile_argument_keyword: str,
 ) -> Tuple[Any, Any, Any, list[str]]:
     """
@@ -482,7 +481,6 @@ def parse_initial_args(
         arg_parser (argparse.ArgumentParser): The argparse object to add the config arg to.
         config_argument_keyword (str): Default keyword to accept new config path from the
             command line.
-        profiles_keyword (str): Default keyword for profiles (YAML key). Defaults to "profiles".
         profile_argument_keyword (str): Command line keyword for selecting profiles. Defaults to "profile".
 
     Returns:

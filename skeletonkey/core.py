@@ -108,7 +108,6 @@ def unlock(
     initial_args = parse_initial_args(
         arg_parser=parser,
         config_argument_keyword=config_argument_keyword,
-        profiles_keyword=profiles_keyword,
         profile_argument_keyword=profile_argument_keyword,
     )
     config_dir_command_line, profile, profile_specifiers, temp_args = initial_args
