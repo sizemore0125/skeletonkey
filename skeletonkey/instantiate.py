@@ -10,16 +10,14 @@ FETCH_KEYWORD: str = "_fetch_"
 
 
 def import_target(class_string: str) -> Type[Any]:
-    """
-    Dynamically import a class/function using its full module path and name.
+    """Import a class or function from a dotted module path.
 
     Args:
-        class_string (str): A string representing the full path to the class,
-                            including the module name and class name, separated
-                            by dots.
+        class_string (str): Full path to the class or function, including
+            module and attribute name.
 
     Returns:
-        type: The imported class object.
+        Type[Any]: The imported class or function.
     """
     parts = class_string.split(".")
     module_name = ".".join(parts[:-1])
@@ -37,26 +35,28 @@ def instantiate(
     _instantiate_recursive: bool = True,
     **kwargs,
 ) -> Any:
-    """
-    Instantiate a class object using a Config object.
-    The Config object should contain the key "_target_" to
-    specify the class to instantiate.
+    """Instantiate objects described by configuration mappings.
 
     Args:
-        *configs (Config): A Config object containing the class to instantiate. Multiple Config objects can be provided.
-        instance_keyword (str, optional): The keyword to use to specify a full class instantiation. Defaults to "_instance_".
-        partial_keyword (str, optional): The keyword to use to specify a partial class instantiation. Defaults to "_partial_".
-        fetch_keyword (str, optional): The keyword to use to specify a fetch class instantiation. Defaults to "_fetch_".
-        _instantiate_recursive (bool, optional): Whether to recursively instantiate subconfigs. Defaults to True.
-        **kwargs: Additional keyword arguments to pass to the class constructor
+        *configs (Config | dict): One or more configs containing instantiation
+            keywords and arguments.
+        instance_keyword (str, optional): Keyword indicating a full
+            instantiation. Defaults to "_instance_".
+        partial_keyword (str, optional): Keyword indicating a partial
+            instantiation. Defaults to "_partial_".
+        fetch_keyword (str, optional): Keyword indicating a fetch-only
+            reference. Defaults to "_fetch_".
+        _instantiate_recursive (bool, optional): Whether to instantiate nested
+            configs before creating the target. Defaults to True.
+        **kwargs: Extra keyword arguments merged into the instantiation call.
 
     Returns:
-        Any: The instantiated class object (or list of objects if multiple configs are provided)
+        Any: Instantiated object for a single config, or a list of objects when
+        multiple configs are provided.
 
     Raises:
-        ValueError: If no valid instantiation keyword is found in the config.
-        TypeError: If any required parameters are missing from the instacne config
-        ValueError: If a config instantiated with the _fetch_ keyword has additional arguments.
+        ValueError: If no valid instantiation keyword is present.
+        TypeError: If required parameters are missing in an instantiation.
     """
 
     if len(configs) == 1:
@@ -77,19 +77,26 @@ def _instantiate_single(
     _instantiate_recursive: bool = True,
     **extra_kwargs,
 ) -> Any:
-    """
-    Instantiate a single config (Config or dict), optionally recursing into subconfigs.
+    """Instantiate a single config, optionally recursing into nested configs.
 
     Args:
-        config (Config|dict): The config to instantiate.
-        instance_keyword (str): Keyword for full instantiation. Defaults to "_instance_".
-        partial_keyword (str): Keyword for partial instantiation. Defaults to "_partial_".
-        fetch_keyword (str): Keyword for fetch-only values. Defaults to "_fetch_".
-        _instantiate_recursive (bool): Whether to instantiate nested configs. Defaults to True.
-        **extra_kwargs: Extra kwargs to overlay onto the instantiation call.
+        config (Config | dict): The config to instantiate.
+        instance_keyword (str): Keyword for full instantiation. Defaults to
+            "_instance_".
+        partial_keyword (str): Keyword for partial instantiation. Defaults to
+            "_partial_".
+        fetch_keyword (str): Keyword for fetch-only values. Defaults to
+            "_fetch_".
+        _instantiate_recursive (bool): Whether to instantiate nested configs.
+            Defaults to True.
+        **extra_kwargs: Extra keyword arguments merged into the instantiation.
 
     Returns:
-        Any: The instantiated object (or partial/fetch result).
+        Any: The instantiated object, partial, or fetched target.
+
+    Raises:
+        ValueError: If no valid instantiation keyword is found.
+        TypeError: If required parameters are missing for instantiation.
     """
 
     kwargs: Dict[str, Any] = {}
@@ -131,32 +138,37 @@ def _instantiate_single(
 
 
 def _is_instantiatable(value: Any, instance_keyword=INSTANCE_KEYWORD, partial_keyword=PARTIAL_KEYWORD, fetch_keyword=FETCH_KEYWORD) -> bool:
-    """
-    Check if a given value can be instantiated.
+    """Determine whether a value contains an instantiation keyword.
 
     Args:
-        value: The value to check.
-        instance_keyword (str, optional): The keyword to use to specify a full class instantiation. Defaults to "_instance_".
-        partial_keyword (str, optional): The keyword to use to specify a partial class instantiation. Defaults to "_partial_".
-        fetch_keyword (str, optional): The keyword to use to specify a fetch class instantiation. Defaults to "_fetch_".
+        value: Value to evaluate.
+        instance_keyword (str, optional): Keyword for full instantiation.
+            Defaults to "_instance_".
+        partial_keyword (str, optional): Keyword for partial instantiation.
+            Defaults to "_partial_".
+        fetch_keyword (str, optional): Keyword for fetch-only references.
+            Defaults to "_fetch_".
+
     Returns:
-        bool: True if the value can be instantiated, False otherwise.
+        bool: True when the value is a dict with an instantiation keyword.
     """
 
     return isinstance(value, dict) and any(keyword in value for keyword in [instance_keyword, partial_keyword, fetch_keyword])
 
 
 def _instance(target: Callable, kwargs: dict, config: Union[Config, Dict[str, Any]]) -> Any:
-    """
-    Create an instance of a class target with the given keyword arguments, checking for missing parameters.
+    """Instantiate a target callable, validating required arguments.
 
     Args:
-        target: The class to instantiate.
-        kwargs: The keyword arguments to pass to the class constructor
-        config: The original config object, used for error messages.
+        target: Callable to instantiate.
+        kwargs (dict): Keyword arguments to pass to the constructor.
+        config (Config | dict): Original config used for error messages.
 
     Returns:
-        Any: The instantiated class object.
+        Any: Instantiated object.
+
+    Raises:
+        TypeError: If required parameters are missing.
     """
 
     # Check for missing parameters
@@ -184,22 +196,34 @@ def _instance(target: Callable, kwargs: dict, config: Union[Config, Dict[str, An
 
 
 def _partial(target: Callable, kwargs: dict, config: Union[Config, Dict[str, Any]]) -> functools.partial:
-    """
-    Create a partial instantiation of a class target with the given keyword arguments.
+    """Create a partial instantiation of a target callable.
 
     Args:
-        target: The class to partially instantiate.
-        kwargs: The keyword arguments to pass to the class constructor
-        config: The original config object, used for error messages.
+        target: Callable to partially instantiate.
+        kwargs (dict): Keyword arguments to bind.
+        config (Config | dict): Original config used for context.
 
     Returns:
-
+        functools.partial: Partial object with bound arguments.
     """
 
     return functools.partial(target, **kwargs)
 
 
 def _fetch(target: Any, kwargs: dict, config: Union[Config, Dict[str, Any]]) -> Any:
+    """Return a fetched target reference without instantiation.
+
+    Args:
+        target: Object to return directly.
+        kwargs (dict): Additional arguments provided in config.
+        config (Config | dict): Original config used for context.
+
+    Returns:
+        Any: The referenced target.
+
+    Raises:
+        ValueError: If extra arguments accompany a fetch config.
+    """
     if kwargs != {}:
         raise ValueError(f"Error in config: {config}. Configs instantiated with the _fetch_ keyword cannot have any additional arguments.")
 
