@@ -1,3 +1,14 @@
+"""Instantiation helpers for skeletonkey.
+
+Provide utilities to import targets and construct objects described by YAML
+configuration dictionaries.
+
+Attributes:
+    INSTANCE_KEYWORD (str): Config key indicating a full instantiation target.
+    PARTIAL_KEYWORD (str): Config key indicating a partial instantiation target.
+    FETCH_KEYWORD (str): Config key indicating a fetch-only reference.
+"""
+
 import inspect
 import functools
 
