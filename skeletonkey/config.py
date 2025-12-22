@@ -137,7 +137,7 @@ class Config:
     def to_yaml(self, path: str, **kwargs) -> str:
         """
         Save Config to YAML at the given path.
-        Extra yaml.safe_dump kwargs can be passed via dump_kwargs.
+        Extra yaml.safe_dump kwargs can be passed via kwargs.
         """
         config_dict = self.to_dict()
         with open(path, "w") as f:
