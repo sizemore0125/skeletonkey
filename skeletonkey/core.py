@@ -17,7 +17,7 @@ import functools
 import os
 import sys
 import warnings
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Set
 
 from .config import (
     parse_initial_args,
@@ -68,6 +68,7 @@ def get_config_dir_path(config_path: str) -> str:
 
 class UnlockMeta(type):
     _COMMAND_LINE_UNLOCK: Dict[str, int] = {}
+    _WRAPPED_FUNCTIONS: Set[int] = set()
 
 
 class unlock(metaclass=UnlockMeta):
@@ -160,7 +161,7 @@ class unlock(metaclass=UnlockMeta):
                 prefix=self.prefix + "." if self.prefix is not None else "",
             )
 
-            parsed_args = self.parser.parse_args()
+            parsed_args, remaining_args = self.parser.parse_known_args()
             args = namespace_to_config(parsed_args)
 
             for temp_arg in self.temp_args:
@@ -171,6 +172,12 @@ class unlock(metaclass=UnlockMeta):
             if config is not None:
                 args.update(config)
 
+            sys.argv = [sys.argv[0], *remaining_args]
+
+            if remaining_args and id(main) not in unlock._WRAPPED_FUNCTIONS:
+                self.parser.error(f"unrecognized arguments: {' '.join(remaining_args)}")
+
             return main(args)
 
+        unlock._WRAPPED_FUNCTIONS.add(id(_inner_function))
         return _inner_function

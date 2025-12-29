@@ -6,6 +6,7 @@ Provides helpers for loading, transforming, and updating configuration data.
 import argparse
 import copy
 import os
+import sys
 import uuid
 from typing import Any, Dict, List, Tuple, Union
 
@@ -515,15 +516,19 @@ def parse_initial_args(
             profile specifiers, and argument names to ignore later.
     """
 
-    arg_parser.add_argument("_pos_profile_", metavar="profile", type=str, nargs="?", default=None)
     arg_parser.add_argument(f"--{config_argument_keyword}", default=None, type=str)
     arg_parser.add_argument(
         f"--{profile_argument_keyword}", metavar="Profile Specifiers", dest="_profile_specifiers", type=str, nargs="*", default=[]
     )
 
-    known_args, _ = arg_parser.parse_known_args()
+    args_list = sys.argv[1:]
+    profile = None
+    if len(args_list) > 0 and not args_list[0].startswith("-"):
+        profile = args_list[0]
+        args_list = args_list[1:]
 
-    profile = known_args._pos_profile_
+    known_args, _ = arg_parser.parse_known_args(args_list)
+
     profile_specifiers = known_args._profile_specifiers
 
     if len(profile_specifiers) > 0 and "." not in profile_specifiers[0]:
@@ -533,7 +538,7 @@ def parse_initial_args(
         del profile_specifiers[0]
 
     config_path = getattr(known_args, config_argument_keyword)
-    return config_path, profile, profile_specifiers, ["_pos_profile_", config_argument_keyword, "_profile_specifiers"]
+    return config_path, profile, profile_specifiers, [config_argument_keyword, "_profile_specifiers"]
 
 
 def config_to_nested_config(config: Config) -> Config:
