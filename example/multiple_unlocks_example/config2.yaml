@@ -1,3 +1,0 @@
-eval:
-  metric: rscore
-  logging_path: /path/for/logging
