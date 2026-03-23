@@ -71,7 +71,7 @@ class UnlockMeta(type):
     _WRAPPED_FUNCTIONS: Set[int] = set()
 
 
-class unlock(metaclass=UnlockMeta):
+class Unlock(metaclass=UnlockMeta):
     def __init__(
         self,
         config_name: Optional[str] = None,
@@ -126,8 +126,8 @@ class unlock(metaclass=UnlockMeta):
 
             # If they have more than one unlock, warn user than the command-line config will
             # overwrite all the configs for all unlocks.
-            unlock._COMMAND_LINE_UNLOCK[config_argument_keyword] = unlock._COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) + 1
-            if unlock._COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) > 1:
+            Unlock._COMMAND_LINE_UNLOCK[config_argument_keyword] = Unlock._COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) + 1
+            if Unlock._COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) > 1:
                 warnings.warn(
                     f"Multiple @unlock decorators are present with the same command line keyword "
                     + f"'{config_argument_keyword}'. The command line configurations will be used for all @unlock calls."
@@ -180,10 +180,14 @@ class unlock(metaclass=UnlockMeta):
 
             sys.argv = [sys.argv[0], *remaining_args]
 
-            if remaining_args and id(main) not in unlock._WRAPPED_FUNCTIONS:
+            if remaining_args and id(main) not in Unlock._WRAPPED_FUNCTIONS:
                 self.parser.error(f"unrecognized arguments: {' '.join(remaining_args)}")
 
             return main(args)
 
-        unlock._WRAPPED_FUNCTIONS.add(id(_inner_function))
+        Unlock._WRAPPED_FUNCTIONS.add(id(_inner_function))
         return _inner_function
+
+
+def unlock(*args, **kwargs):
+    return Unlock(*args, **kwargs)

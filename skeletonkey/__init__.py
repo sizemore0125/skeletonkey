@@ -9,8 +9,8 @@ Attributes:
 
 __version__ = "0.3.2.0"
 
-from .core import Config, unlock
+from .core import Config, Unlock, unlock
 from .instantiate import instantiate
 
 # Names to import with wildcard import
-__all__ = ["unlock", "instantiate", "Config"]
+__all__ = ["unlock", "Unlock", "instantiate", "Config"]
