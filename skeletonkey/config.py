@@ -8,18 +8,20 @@ import copy
 import os
 import sys
 import uuid
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 import yaml
 
 
 class Config:
-    def __init__(self, config_dict: dict):
+    def __init__(self, config_dict: Optional[dict] = None):
         """Initialize the config from a dictionary.
 
         Args:
             config_dict (dict): Source dictionary.
         """
+        if config_dict is None:
+            config_dict = dict()
         if not isinstance(config_dict, dict):
             raise ValueError("Supplied arg must be a dictionary")
         self._init_from_dict(config_dict)
