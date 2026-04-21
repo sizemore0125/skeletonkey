@@ -13,6 +13,13 @@ from typing import Any, Dict, List, Tuple, Union, Optional
 import yaml
 
 
+class classonlymethod(classmethod):
+    def __get__(self, instance, owner=None):
+        if instance is not None:
+            raise AttributeError(f"{owner.__name__}.unlock() must be called on the class, not an instance.")
+        return super().__get__(instance, owner)
+
+
 class Config:
     def __init__(self, config_dict: Optional[dict] = None):
         """Initialize the config from a dictionary.
@@ -157,6 +164,96 @@ class Config:
         with open(path, "w") as f:
             yaml.safe_dump(config_dict, f, sort_keys=False, **kwargs)
         return path
+
+    @classonlymethod
+    def unlock(
+        cls,
+        config_name: Optional[str] = None,
+        config_dir: Optional[str] = None,
+        prefix: Optional[str] = None,
+        config_argument_keyword: str = "config",
+        profiles_keyword: str = "profiles",
+        profile_argument_keyword: str = "profile",
+        collection_keyword: str = "keyring",
+    ) -> "Config":
+        """Load a YAML config using the same parsing flow as ``@unlock``.
+
+        Args:
+            config_name (Optional[str]): Name or path of the YAML configuration
+                file; relative or absolute.
+            config_dir (Optional[str]): Directory to resolve the config from.
+            prefix (Optional[str]): Optional prefix to nest this unlock's
+                arguments under.
+            config_argument_keyword (str): Command line flag to override the
+                config path. Defaults to "config".
+            profiles_keyword (str): Keyword for profile selection in the YAML.
+                Defaults to "profiles".
+            profile_argument_keyword (str): Command line flag for selecting
+                profiles. Defaults to "profile".
+            collection_keyword (str): Keyword for collections in the YAML.
+                Defaults to "keyring".
+
+        Returns:
+            Config: Parsed configuration.
+
+        Raises:
+            ValueError: If neither the method nor the command line supplies a
+                config path.
+        """
+        from .core import get_config_dir_path
+
+        parser = argparse.ArgumentParser(allow_abbrev=False, add_help=False)
+        config_dir_command_line, profile, profile_specifiers, temp_args = parse_initial_args(
+            arg_parser=parser,
+            config_argument_keyword=config_argument_keyword,
+            profile_argument_keyword=profile_argument_keyword,
+        )
+
+        if config_dir_command_line is not None:
+            config_name = os.path.abspath(config_dir_command_line)
+            config_dir = None
+
+        if config_name is not None:
+            config_dir = get_config_dir_path(os.path.dirname(config_name))
+        else:
+            raise ValueError("config path is neither specified in 'Config.unlock' nor via the command line.")
+
+        config_name = os.path.basename(add_yaml_extension(config_name))
+
+        config_dict = load_yaml_config(
+            config_path=config_dir,
+            config_name=config_name,
+            profile=profile,
+            profile_specifiers=profile_specifiers,
+            profiles_keyword=profiles_keyword,
+            collection_keyword=collection_keyword,
+        )
+
+        parser_prefix = prefix + "." if prefix is not None else ""
+        add_args_from_dict(
+            arg_parser=parser,
+            config_dict=config_dict,
+            prefix=parser_prefix,
+        )
+
+        args_for_parser = sys.argv[1:]
+        if args_for_parser and profile is not None and args_for_parser[0] == profile:
+            args_for_parser = args_for_parser[1:]
+        elif args_for_parser and not args_for_parser[0].startswith("-"):
+            args_for_parser = args_for_parser[1:]
+
+        parsed_args, remaining_args = parser.parse_known_args(args_for_parser)
+        args = namespace_to_config(parsed_args)
+
+        for temp_arg in temp_args:
+            del args[temp_arg]
+
+        args = config_to_nested_config(args)
+
+        if remaining_args:
+            parser.error(f"unrecognized arguments: {' '.join(remaining_args)}")
+
+        return args
 
 
 def find_yaml_path(file_path: str) -> str:
