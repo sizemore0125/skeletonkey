@@ -124,7 +124,7 @@ class Unlock(metaclass=UnlockMeta):
             config_name = os.path.abspath(config_dir_command_line)
             config_dir = None
 
-            # If they have more than one unlock, warn user than the command-line config will
+            # If they have more than one unlock, warn user that the command-line config will
             # overwrite all the configs for all unlocks.
             Unlock._COMMAND_LINE_UNLOCK[config_argument_keyword] = Unlock._COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) + 1
             if Unlock._COMMAND_LINE_UNLOCK.get(config_argument_keyword, 0) > 1:

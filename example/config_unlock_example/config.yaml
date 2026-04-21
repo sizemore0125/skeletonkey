@@ -1,0 +1,9 @@
+?debug: true
+epochs: 128
+model:
+  _instance_: main.MyModel
+  layer_size: 128
+  activation: relu
+
+objective:
+  _instance_: main.MyObjective
