@@ -163,9 +163,7 @@ class Unlock(metaclass=UnlockMeta):
             )
 
             args_for_parser = sys.argv[1:]
-            if args_for_parser and self.profile is not None and args_for_parser[0] == self.profile:
-                args_for_parser = args_for_parser[1:]
-            elif args_for_parser and not args_for_parser[0].startswith("-"):
+            while args_for_parser and not args_for_parser[0].startswith("-"):
                 args_for_parser = args_for_parser[1:]
 
             parsed_args, remaining_args = self.parser.parse_known_args(args_for_parser)
