@@ -376,14 +376,13 @@ def load_yaml_config(
     """
     path = os.path.join(config_path, config_name)
     config = open_yaml(path)
+    interpolate_config(config)
 
     if profiles_keyword in config:
         unpack_profiles(config, config_path, profile, profile_specifiers, profiles_keyword)
 
     if collection_keyword in config:
         unpack_collection(config, config_path, collection_keyword)
-
-    interpolate_config(config)
 
     return config
 
@@ -433,6 +432,7 @@ def get_default_args_from_path(config_path: str, default_yaml: str) -> dict:
     default_yaml = add_yaml_extension(default_yaml)
     default_config_path = os.path.join(config_path, default_yaml)
     default_config = open_yaml(default_config_path)
+    interpolate_config(default_config)
     return default_config
 
 
