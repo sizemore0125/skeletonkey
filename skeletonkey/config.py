@@ -237,9 +237,7 @@ class Config:
         )
 
         args_for_parser = sys.argv[1:]
-        if args_for_parser and profile is not None and args_for_parser[0] == profile:
-            args_for_parser = args_for_parser[1:]
-        elif args_for_parser and not args_for_parser[0].startswith("-"):
+        while args_for_parser and not args_for_parser[0].startswith("-"):
             args_for_parser = args_for_parser[1:]
 
         parsed_args, remaining_args = parser.parse_known_args(args_for_parser)
@@ -692,13 +690,18 @@ def parse_initial_args(
 
     args_list = sys.argv[1:]
     profile = None
-    if len(args_list) > 0 and not args_list[0].startswith("-"):
-        profile = args_list[0]
+    positional_profile_specifiers = []
+    while len(args_list) > 0 and not args_list[0].startswith("-"):
+        positional_profile_specifiers.append(args_list[0])
         args_list = args_list[1:]
+
+    if len(positional_profile_specifiers) > 0 and "." not in positional_profile_specifiers[0]:
+        profile = positional_profile_specifiers[0]
+        del positional_profile_specifiers[0]
 
     known_args, _ = arg_parser.parse_known_args(args_list)
 
-    profile_specifiers = known_args._profile_specifiers
+    profile_specifiers = positional_profile_specifiers + known_args._profile_specifiers
 
     if len(profile_specifiers) > 0 and "." not in profile_specifiers[0]:
         if profile is not None:
