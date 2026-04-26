@@ -26,6 +26,7 @@ from .config import (
     add_yaml_extension,
     namespace_to_config,
     config_to_nested_config,
+    interpolate_config,
     Config,
 )
 
@@ -177,6 +178,8 @@ class Unlock(metaclass=UnlockMeta):
 
             if config is not None:
                 args.update(config)
+
+            interpolate_config(args)
 
             sys.argv = [sys.argv[0], *remaining_args]
 
